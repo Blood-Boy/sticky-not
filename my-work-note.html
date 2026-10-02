@@ -1,0 +1,504 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>my work note</title>
+<link href="https://fonts.googleapis.com/css2?family=Readex+Pro:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#FBFBFA;--ink:#37352F;--mute:#787774;--rose:#2383E2;--line:#E9E9E7;--paper:#fff;--hov:#F1F1EF;--dim:1;color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#191919;--ink:#EBEBEA;--mute:#9B9A97;--rose:#529CCA;--line:#373737;--paper:#252525;--hov:#2F2F2F;--dim:.86;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#191919;--ink:#EBEBEA;--mute:#9B9A97;--rose:#529CCA;--line:#373737;--paper:#252525;--hov:#2F2F2F;--dim:.86;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Readex Pro",Tahoma,Arial,sans-serif;min-height:100vh}
+button,input,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--rose);outline-offset:2px}
+.wrap{max-width:980px;margin:0 auto;padding:20px 16px 50px}
+h1{font-size:1.4rem;font-weight:600;color:var(--rose);text-align:center;margin:12px 0 26px;letter-spacing:.02em}
+.top{display:flex;align-items:center;gap:10px;justify-content:space-between;margin-bottom:6px}
+.who{color:var(--mute);font-size:.9rem}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:16px}
+.add,.note{min-height:220px;border-radius:6px 6px 26px 6px;display:flex;flex-direction:column}
+.add{align-items:center;justify-content:center;background:transparent;border:2px dashed var(--rose);color:var(--rose);font-size:3.4rem;line-height:1}
+.add:hover{background:color-mix(in srgb,var(--rose) 10%,transparent)}
+.nw{position:relative;display:flex;flex-direction:column}
+.nw .note{flex:1}
+.note{padding:16px;text-decoration:none;color:#37352F;position:relative;overflow:hidden;transition:transform .15s}
+.note:hover{transform:translateY(-3px)}
+.note::after{content:"";position:absolute;left:0;bottom:0;width:26px;height:26px;background:linear-gradient(315deg,var(--bg) 50%,rgba(0,0,0,.08) 50%);border-radius:0 6px 0 0}
+.note h2{font-size:1.05rem;margin:0 0 10px;font-weight:600;padding-left:74px}
+.note p{margin:0 0 6px;font-size:.88rem;line-height:1.6;opacity:.85}
+.cdel{position:absolute;top:8px;left:8px;width:30px;height:30px;border-radius:50%;border:0;background:rgba(255,255,255,.8);color:#C2294F;font-size:1.2rem;line-height:1;z-index:2}
+.cdel:hover{background:#fff}
+.empty{grid-column:1/-1;color:var(--mute);text-align:center;margin:10px 0}
+.bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:16px}
+.btn{border:1.5px solid var(--line);background:var(--paper);border-radius:999px;padding:8px 16px}
+.btn.main{background:var(--rose);border-color:var(--rose);color:#fff}
+.btn.danger{color:#C2294F}
+.btn.dangerfill{background:#C2294F;border-color:#C2294F;color:#fff}
+.sp{flex:1}
+.sheet{border-radius:8px 8px 34px 8px;padding:22px;min-height:60vh;color:#37352F;display:flex;flex-direction:column}
+.ttl{width:100%;border:0;background:transparent;font-size:1.6rem;font-weight:600;padding:4px 0 12px;border-bottom:2px solid rgba(55,53,47,.18);margin-bottom:14px}
+.blk{display:flex;align-items:flex-start;gap:10px;margin:4px 0}
+.blk input[type=checkbox]{width:20px;height:20px;accent-color:#2383E2;flex:none;margin-top:9px}
+.bt{flex:1;min-width:0;border:0;background:transparent;padding:6px 2px;font-size:1.02rem;line-height:1.8;resize:none;overflow:hidden}
+input.bt{border-bottom:1px dashed rgba(55,53,47,.2)}
+.blk input:checked + .bt{text-decoration:line-through;opacity:.5}
+.mini{border:0;background:transparent;font-size:1.1rem;color:#37352F;opacity:.45;padding:6px 4px;flex:none}
+.mini:hover{opacity:1}
+.addbar{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.addbar button{border:1.5px dashed rgba(55,53,47,.35);background:rgba(255,255,255,.45);border-radius:999px;padding:6px 14px;font-size:.88rem;color:#37352F}
+.sig{margin-top:auto;padding-top:28px;text-align:center;font-weight:600;letter-spacing:.14em;font-size:.9rem;color:#1F6FBF}
+.sw{display:flex;gap:7px;align-items:center;flex-wrap:wrap;justify-content:flex-end;max-width:100%}
+.sw button{width:26px;height:26px;border-radius:50%;border:2px solid var(--line);padding:0}
+.sw button[aria-pressed="true"]{border-color:var(--ink);box-shadow:0 0 0 2px var(--bg),0 0 0 4px var(--ink)}
+.foot{text-align:center;margin-top:34px;font-weight:600;letter-spacing:.14em;font-size:.85rem;color:var(--rose)}
+.modal{position:fixed;inset:0;background:rgba(30,18,24,.7);display:flex;align-items:center;justify-content:center;padding:16px;z-index:9}
+.modal .box{background:var(--paper);border-radius:14px;padding:16px;max-width:420px;width:100%;max-height:92vh;overflow:auto;text-align:center}
+.modal img{width:100%;border-radius:8px;display:block;margin-bottom:12px}
+.modal p.q{margin:4px 0 16px;font-size:1.05rem}
+.msg{font-size:.85rem;color:var(--mute);margin:8px 0 0;min-height:1.2em}
+.login{max-width:360px;margin:8vh auto 0;background:var(--paper);border:1.5px solid var(--line);border-radius:18px;padding:26px 22px;text-align:center}
+.login h1{margin-top:0}
+.login input{width:100%;border:1.5px solid var(--line);background:transparent;border-radius:12px;padding:11px 14px;margin-bottom:12px;text-align:center}
+.login .bar{justify-content:center;margin:0}
+.chips{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin-top:14px}
+.chips button{border:1.5px solid var(--line);background:transparent;border-radius:999px;padding:4px 12px;font-size:.85rem}
+.cmove{position:absolute;top:8px;left:44px;width:30px;height:30px;border-radius:50%;border:0;background:rgba(255,255,255,.8);color:#37352F;font-size:1rem;line-height:1;z-index:2}
+.cmove:hover{background:#fff}
+.note.fold{background:linear-gradient(160deg,#fff,#FFE3EC);border:2px solid #F3B7CB}
+.addf{font-size:1.15rem}
+.nm{width:100%;border:1.5px solid var(--line);background:transparent;border-radius:12px;padding:11px 14px;margin-bottom:14px;text-align:center}
+.dest{display:flex;flex-direction:column;gap:8px;margin-bottom:14px}
+.dest .btn{text-align:start}
+.dest .btn:disabled{opacity:.5;cursor:default}
+.ubox{display:flex;align-items:center;gap:10px;background:var(--paper);border:1.5px solid var(--line);border-radius:14px;padding:6px 14px 6px 10px;max-width:60%}
+.ubox:hover{border-color:var(--rose)}
+.un{font-weight:600;font-size:.95rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.av{position:relative;display:inline-block;flex:none}
+.av img,.avi{width:100%;height:100%;border-radius:50%;display:block;object-fit:cover}
+.avi{display:grid;place-items:center;font-weight:600;color:#37352F}
+.avb{position:absolute;bottom:-3px;left:-3px;width:17px;height:17px;border-radius:50%;background:var(--rose);font-size:9px;display:grid;place-items:center;border:2px solid var(--paper)}
+.modal .av img{margin:0;border-radius:50%;width:100%}
+.pfile{display:none}
+.icons{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:14px}
+.icons button{border:1.5px solid var(--line);background:transparent;border-radius:10px;padding:6px 0;font-size:1.2rem}
+.icons button[aria-pressed="true"]{border-color:var(--rose);background:color-mix(in srgb,var(--rose) 14%,transparent)}
+h1{font-size:2rem;font-weight:700;color:var(--ink);text-align:start;margin:14px 0 22px;letter-spacing:0}
+.login h1{font-size:1.5rem;text-align:center;margin-top:0}
+.top{gap:10px;margin-bottom:10px}
+.add,.note{min-height:190px;border-radius:12px}
+.add{border:1.5px dashed var(--line);color:var(--mute);font-size:2.6rem}
+.add:hover{border-color:var(--rose);color:var(--rose);background:var(--hov)}
+.add.addf{font-size:1.05rem}
+.note{padding:0;background:var(--paper);color:var(--ink);border:1px solid var(--line);box-shadow:0 1px 2px rgba(15,15,15,.05);transition:transform .15s,box-shadow .15s}
+.note:hover{transform:translateY(-2px);box-shadow:0 6px 16px rgba(15,15,15,.1)}
+.note::after{display:none}
+.cov{display:block;height:68px}
+.nb{padding:12px 14px 14px}
+.note h2{padding:0;font-size:1rem;margin:0 0 8px}
+.note.fold{background:var(--paper);border:1px solid var(--line)}
+.note.fold .nb{padding-top:18px}
+.fic{font-size:2.2rem;line-height:1;display:block;margin-bottom:10px}
+.btn{border:1px solid var(--line);border-radius:8px;padding:7px 12px;font-size:.92rem}
+.btn:hover{background:var(--hov)}
+.btn.main{background:var(--rose);border-color:var(--rose);color:#fff}
+.btn.main:hover{background:var(--rose);filter:brightness(.94)}
+.btn.dangerfill:hover{background:#C2294F}
+.sq{width:42px;height:42px;flex:none;display:grid;place-items:center;border:1.5px solid var(--line);border-radius:10px;background:var(--paper);color:var(--mute);padding:0}
+.sq:hover{border-color:#C2294F;color:#C2294F;background:var(--hov)}
+.ubox{border-radius:10px;border:1.5px solid var(--line)}
+.sheet{border-radius:14px;border:1px solid var(--line)}
+.cdel,.cmove{background:rgba(255,255,255,.88);box-shadow:0 1px 2px rgba(15,15,15,.18)}
+.foot{color:var(--mute);font-weight:600}
+.modal{background:rgba(15,15,15,.55)}
+html,body{-webkit-text-size-adjust:100%}
+body{min-height:100vh;min-height:100dvh;-webkit-tap-highlight-color:transparent}
+button,.btn,label{touch-action:manipulation}
+.cov,.sheet{filter:brightness(var(--dim))}
+.wrap{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.btn{min-height:38px}
+.sheet{min-height:55vh;min-height:55dvh}
+.nm,.login input{font-size:1rem}
+.lt{position:fixed;top:calc(12px + env(safe-area-inset-top,0px));left:12px;z-index:5}
+.ubox{min-width:0}
+@media (hover:none){.note:hover{transform:none;box-shadow:0 1px 2px rgba(15,15,15,.05)}}
+@media (max-width:600px){
+  .wrap{padding-top:12px;padding-bottom:40px}
+  h1{font-size:1.55rem;margin:10px 0 16px}
+  .grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  .add,.note{min-height:150px}
+  .cov{height:48px}
+  .nb{padding:10px 11px 12px}
+  .note h2{font-size:.95rem}
+  .note p{font-size:.82rem}
+  .fic{font-size:1.8rem}
+  .cdel,.cmove{width:34px;height:34px;top:7px}
+  .cdel{left:7px}.cmove{left:47px}
+  .un{max-width:88px}
+  .ubox{max-width:none;padding:5px 10px 5px 8px}
+  .sq{width:40px;height:40px}
+  .bar .sw{width:100%;order:3;justify-content:flex-start;gap:9px}
+  .sw button{width:32px;height:32px}
+  .sheet{padding:14px;border-radius:12px}
+  .ttl{font-size:1.35rem}
+  .blk{gap:6px}
+  .blk input[type=checkbox]{width:24px;height:24px;margin-top:8px}
+  .mini{min-width:36px;min-height:36px;font-size:1.25rem}
+  .addbar button{flex:1;padding:10px 12px}
+  .bar .btn.main{flex:1}
+  .login{margin:14vh 12px 0;max-width:none;padding:22px 16px}
+  .modal{align-items:flex-end;padding:0}
+  .modal .box{max-width:none;border-radius:18px 18px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom,0px));max-height:88dvh}
+  .icons{grid-template-columns:repeat(7,minmax(0,1fr));gap:5px}
+}
+@media (max-width:360px){.grid{grid-template-columns:1fr}.un{max-width:64px}}
+.btn.ic{padding:0;width:40px;height:40px;display:inline-grid;place-items:center;flex:none}
+.bar .btn.ic{flex:none}
+label.btn.ic{cursor:pointer}
+.cdel,.cmove{display:grid;place-items:center;padding:0}
+.mini{display:grid;place-items:center;min-width:32px;min-height:32px}
+.addbar button{display:inline-flex;align-items:center;justify-content:center;gap:4px}
+.add svg{display:block}
+.login .bar .btn.ic{width:48px;height:48px}
+@media (prefers-reduced-motion:reduce){.note{transition:none}}
+</style>
+</head>
+<body>
+<div class="wrap" id="app"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/htm@3.1.1/dist/htm.umd.js"></script>
+<script>
+if(!window.React||!window.ReactDOM||!window.htm){document.getElementById("app").textContent="مقدرتش أحمّل React. تأكد من النت وجرّب تاني."}
+else{
+const {useState,useEffect,useLayoutEffect,useRef,useMemo}=React;
+const html=htm.bind(React.createElement);
+const SIG="P4K BILAL TEAM";
+const THEMES=[["#FFFFFF","#DDEBF1"],["#E7F3F8","#FFFFFF","#A9D4EC"],["#EDF3EC","#FFFFFF","#A8DDBA"],["#FBF3DB","#FFFFFF","#FFDC8A"],["#FAEBDD","#FFFFFF","#FFC08A"],["#F6F3F9","#FFFFFF","#C9B6F2"],["#FAF1F5","#FFFFFF","#F5B3D1"],["#FDEBEC","#FFFFFF","#FFA9A4"],["#F1F1EF","#FFFFFF","#D9D7D2"],["#E7F3F8","#EDF3EC","#FBF3DB"],["#DDEBF1","#F6F3F9","#FAF1F5"],["#FFDC8A","#FFC08A","#FFA9A4"]];
+const grad=t=>"linear-gradient(160deg,"+THEMES[t%THEMES.length].join(",")+")";
+const uid=()=>Math.random().toString(36).slice(2,8)+Date.now().toString(36).slice(-3);
+const store={
+  get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}},
+  set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+function norm(n){
+  let b=n.blocks;
+  if(!b){b=(n.items||[]).map(i=>({k:"c",t:i.t,d:!!i.d}));if(n.text)b.push({k:"p",t:n.text})}
+  return {id:n.id||uid(),title:n.title||"",folder:n.folder||null,theme:n.theme||0,blocks:b.map(x=>({id:x.id||uid(),k:x.k==="c"?"c":"p",t:x.t||"",d:!!x.d}))}}
+function lines(n){return n.blocks.filter(b=>b.t).map(b=>b.k==="c"?(b.d?"✔ ":"○ ")+b.t:b.t)}
+function wrap(ctx,text,max){const out=[];String(text).split("\n").forEach(p=>{let line="";p.split(" ").forEach(w=>{const t=line?line+" "+w:w;if(ctx.measureText(t).width>max&&line){out.push(line);line=w}else line=t});out.push(line)});return out}
+async function makeImage(n){
+  try{await document.fonts.load('600 40px "Readex Pro"')}catch(e){}
+  const W=1080,F='"Readex Pro",Tahoma,Arial,sans-serif',R=W-100,max=W-200;
+  const c=document.createElement("canvas"),x=c.getContext("2d");
+  x.font="600 68px "+F;
+  const tl=wrap(x,n.title||"من غير اسم",max);
+  const items=n.blocks.filter(b=>b.t.trim());
+  const lay=s=>{
+    const fs=44*s,LH=70*s,PAD=24*s,BX=66*s;x.font="400 "+fs+"px "+F;let tot=0;
+    const L=items.map((b,i)=>{const isC=b.k==="c",ls=wrap(x,b.t,max-(isC?BX:0)),h=ls.length*LH;tot+=h+(i<items.length-1?PAD:0);return {b,isC,ls,h}});
+    return {L,tot,fs,LH,PAD,BX}};
+  let H=1350;const bodyY=160+tl.length*92,avail=H-190-bodyY;
+  let s=1,r=lay(s);
+  while(r.tot>avail&&s>0.5){s=Math.round((s-0.04)*100)/100;r=lay(s)}
+  if(r.tot>avail)H+=Math.ceil(r.tot-avail);
+  c.width=W;c.height=H;
+  const g=x.createLinearGradient(0,0,W*.4,H),th=THEMES[n.theme%THEMES.length];th.forEach((col,i)=>g.addColorStop(i/(th.length-1),col));
+  x.fillStyle=g;x.fillRect(0,0,W,H);
+  x.direction="rtl";x.textAlign="right";x.textBaseline="top";x.fillStyle="#37352F";
+  x.font="600 68px "+F;
+  let y=110;tl.forEach(l=>{x.fillText(l,R,y);y+=92});
+  y+=10;x.fillStyle="rgba(55,53,47,.25)";x.fillRect(100,y,W-200,3);y=bodyY;
+  x.font="400 "+r.fs+"px "+F;
+  r.L.forEach((it,k)=>{
+    const {b,isC,ls,h}=it,tr=isC?R-r.BX:R;
+    if(isC){
+      const z=40*s,bx=R-z,by=y+6*s;
+      x.beginPath();if(x.roundRect)x.roundRect(bx,by,z,z,.225*z);else x.rect(bx,by,z,z);
+      x.lineWidth=4*s;
+      if(b.d){x.fillStyle="#2383E2";x.fill();x.strokeStyle="#2383E2"}else x.strokeStyle="#37352F";
+      x.stroke();
+      if(b.d){x.strokeStyle="#fff";x.lineWidth=5*s;x.lineCap="round";x.lineJoin="round";x.beginPath();x.moveTo(bx+.225*z,by+.525*z);x.lineTo(bx+.425*z,by+.725*z);x.lineTo(bx+.775*z,by+.3*z);x.stroke()}
+    }
+    x.globalAlpha=isC&&b.d?.55:1;x.fillStyle="#37352F";
+    ls.forEach((l,i)=>{const ty=y+i*r.LH;x.fillText(l,tr,ty);if(isC&&b.d){const w=x.measureText(l).width;x.fillRect(tr-w,ty+r.LH*.46,w,Math.max(2,3*s))}});
+    x.globalAlpha=1;y+=h+r.PAD;
+    if(k<r.L.length-1){x.fillStyle="rgba(55,53,47,.2)";x.fillRect(100,y-r.PAD/2,W-200,2)}
+  });
+  x.fillStyle="rgba(55,53,47,.2)";x.fillRect(100,H-150,W-200,2);
+  x.direction="ltr";x.textAlign="center";x.textBaseline="alphabetic";x.font="600 36px "+F;x.fillStyle="#1F6FBF";
+  if(x.letterSpacing!==undefined)x.letterSpacing="6px";
+  x.fillText(SIG,W/2,H-70);
+  return new Promise(r=>c.toBlob(r,"image/png"))}
+
+const ICONS=["📁","⭐","💼","📚","🏠","💡","🎯","🛒","✈️","🎵","💰","❤️","🌸","🎨"];
+function Avatar({src,name,size,badge}){
+  const ch=(name||"?").trim().charAt(0).toUpperCase();
+  const h=[...(name||"")].reduce((a,c)=>a+c.charCodeAt(0),0)%THEMES.length;
+  return html`<span class="av" style=${{width:size,height:size,fontSize:size*.45}}>
+    ${src?html`<img src=${src} alt=""/>`:html`<span class="avi" style=${{background:grad(h)}}>${ch}</span>`}
+    ${badge&&html`<span class="avb" aria-hidden="true">📷</span>`}</span>`}
+function readAvatar(file){return new Promise((res,rej)=>{
+  const fr=new FileReader();fr.onerror=rej;
+  fr.onload=()=>{const im=new Image();im.onerror=rej;
+    im.onload=()=>{const S=160,c=document.createElement("canvas");c.width=c.height=S;const z=Math.min(im.width,im.height);
+      c.getContext("2d").drawImage(im,(im.width-z)/2,(im.height-z)/2,z,z,0,0,S,S);res(c.toDataURL("image/jpeg",.85))};
+    im.src=fr.result};
+  fr.readAsDataURL(file)})}
+function ProfileModal({user,avatar,onSave,onClose}){
+  const [msg,setMsg]=useState("");
+  async function pick(e){const f=e.target.files&&e.target.files[0];if(!f)return;
+    try{onSave(await readAvatar(f));onClose()}catch(err){setMsg("مقدرتش أقرأ الصورة دي. جرّب صورة تانية.")}}
+  return html`<${Modal} onClose=${onClose}>
+    <div style=${{display:"flex",justifyContent:"center",marginBottom:10}}><${Avatar} src=${avatar} name=${user} size=${96}/></div>
+    <p class="q" style=${{marginBottom:14}}>${user}</p>
+    <div class="bar" style=${{justifyContent:"center",margin:0}}>
+      <label class="btn ic main" title="اختار صورة" aria-label="اختار صورة"><${Ic} n="image"/><input class="pfile" type="file" accept="image/*" onChange=${pick}/></label>
+      ${avatar&&html`<${IB} c="danger" n="trash" label="شيل الصورة" onClick=${()=>{onSave(null);onClose()}}/>`}
+      <${IB} n="x" label="إغلاق" onClick=${onClose}/>
+    </div>
+    <p class="msg">${msg}</p>
+  <//>`}
+
+function applyTheme(t){const r=document.documentElement;if(t==="dark"||t==="light")r.setAttribute("data-theme",t);else r.removeAttribute("data-theme")}
+function curDark(){const t=document.documentElement.getAttribute("data-theme");return t?t==="dark":!!(window.matchMedia&&matchMedia("(prefers-color-scheme: dark)").matches)}
+function ThemeBtn(){
+  const [dark,setDark]=useState(curDark);
+  const toggle=()=>{const t=dark?"light":"dark";applyTheme(t);store.set("mwn:theme",t);setDark(!dark)};
+  const lbl=dark?"الوضع الفاتح":"الوضع الغامق";
+  return html`<button class="sq" onClick=${toggle} aria-label=${lbl} title=${lbl}>
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      ${dark?html`<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>`:html`<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>`}
+    </svg></button>`}
+
+const IC={
+plus:'<path d="M12 5v14M5 12h14"/>',
+x:'<path d="M18 6L6 18M6 6l12 12"/>',
+check:'<path d="M20 6L9 17l-5-5"/>',
+trash:'<path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6M10 11v6M14 11v6"/>',
+edit:'<path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>',
+move:'<path d="M8 3L4 7l4 4M4 7h16M16 21l4-4-4-4M20 17H4"/>',
+back:'<path d="M5 12h14M12 5l7 7-7 7"/>',
+folderplus:'<path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.7-.9l-.8-1.2A2 2 0 0 0 7.9 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2zM12 11v6M9 14h6"/>',
+list:'<path d="M10 6h11M10 12h11M10 18h11M3 6l1.5 1.5L7 5M3 12l1.5 1.5L7 10M3 18l1.5 1.5L7 16"/>',
+text:'<path d="M4 7V5h16v2M9 19h6M12 5v14"/>',
+share:'<path d="M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7M16 6l-4-4-4 4M12 2v13"/>',
+image:'<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/>',
+download:'<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>',
+login:'<path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3"/>',
+userplus:'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM19 8v6M22 11h-6"/>'};
+function Ic({n,s}){const z=s||20;return html`<svg width=${z} height=${z} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" dangerouslySetInnerHTML=${{__html:IC[n]}}/>`}
+function IB({n,label,c,onClick,type,disabled}){return html`<button type=${type||"button"} class=${"btn ic "+(c||"")} title=${label} aria-label=${label} onClick=${onClick} disabled=${disabled}><${Ic} n=${n}/></button>`}
+
+function Modal({onClose,children}){
+  useEffect(()=>{const f=e=>{if(e.key==="Escape")onClose()};addEventListener("keydown",f);return()=>removeEventListener("keydown",f)},[onClose]);
+  return html`<div class="modal" onClick=${e=>{if(e.target===e.currentTarget)onClose()}}><div class="box" role="dialog" aria-modal="true">${children}</div></div>`}
+
+function Confirm({text,yes,onYes,onNo}){
+  return html`<${Modal} onClose=${onNo}>
+    <p class="q">${text}</p>
+    <div class="bar" style=${{justifyContent:"center",margin:0}}>
+      <button class="btn ic dangerfill" autoFocus title=${yes||"احذف"} aria-label=${yes||"احذف"} onClick=${onYes}><${Ic} n="trash"/></button>
+      <${IB} n="x" label="إلغاء" onClick=${onNo}/>
+    </div>
+  <//>`}
+
+function NameModal({title,init,icon,onSave,onClose}){
+  const [v,setV]=useState(init||"");
+  const [ic,setIc]=useState(icon||"📁");
+  const ok=v.trim().length>0;
+  return html`<${Modal} onClose=${onClose}>
+    <form onSubmit=${e=>{e.preventDefault();if(ok)onSave(v.trim().slice(0,40),ic)}}>
+      <p class="q">${title}</p>
+      <div class="icons">${ICONS.map(i=>html`<button type="button" key=${i} aria-pressed=${ic===i} aria-label=${"أيقونة "+i} onClick=${()=>setIc(i)}>${i}</button>`)}</div>
+      <input class="nm" autoFocus value=${v} placeholder="اسم المجلد" onInput=${e=>setV(e.target.value)}/>
+      <div class="bar" style=${{justifyContent:"center",margin:0}}>
+        <${IB} type="submit" c="main" n="check" label="حفظ" disabled=${!ok}/>
+        <${IB} n="x" label="إلغاء" onClick=${onClose}/>
+      </div>
+    </form>
+  <//>`}
+
+function MoveModal({folders,current,onPick,onClose}){
+  const opts=[{id:null,name:"الرئيسية"},...folders];
+  return html`<${Modal} onClose=${onClose}>
+    <p class="q">انقل النوت إلى</p>
+    <div class="dest">${opts.map(o=>html`<button key=${o.id||"root"} class="btn" disabled=${o.id===current} onClick=${()=>onPick(o.id)}>${(o.id?(o.icon||"📁")+" ":"")+o.name+(o.id===current?" (هنا)":"")}</button>`)}</div>
+    <${IB} n="x" label="إلغاء" onClick=${onClose}/>
+  <//>`}
+
+function ShareModal({img,onClose}){
+  const [msg,setMsg]=useState("");
+  const file=useMemo(()=>{try{return new File([img.blob],img.name,{type:"image/png"})}catch(e){return null}},[img]);
+  const canShare=!!(file&&navigator.canShare&&navigator.canShare({files:[file]}));
+  useEffect(()=>()=>URL.revokeObjectURL(img.url),[img]);
+  const fail="الحفظ مش متاح هنا. اضغط مطولاً على الصورة واحفظها.";
+  async function save(){
+    let d=null;try{d=await claude.use("downloads")}catch(e){}
+    if(!d){setMsg(fail);return}
+    try{await d.save({filename:img.name,data:img.blob});setMsg("اتحفظت")}catch(e){setMsg(e&&e.code==="declined"?"":fail)}}
+  async function share(){try{await navigator.share({files:[file],title:img.title})}catch(e){}}
+  return html`<${Modal} onClose=${onClose}>
+    <img alt="معاينة النوت" src=${img.url}/>
+    <div class="bar" style=${{justifyContent:"center",margin:0}}>
+      <${IB} c="main" n="download" label="حفظ الصورة" onClick=${save}/>
+      ${canShare&&html`<${IB} n="share" label="مشاركة" onClick=${share}/>`}
+      <${IB} n="x" label="إغلاق" onClick=${onClose}/>
+    </div>
+    <p class="msg">${msg}</p>
+  <//>`}
+
+function TA({value,onInput,r}){
+  const ref=useRef(null);
+  useLayoutEffect(()=>{const e=ref.current;if(e){e.style.height="auto";e.style.height=e.scrollHeight+"px"}},[value]);
+  return html`<textarea class="bt" rows="1" placeholder="اكتب هنا..." value=${value} onInput=${onInput} ref=${e=>{ref.current=e;r(e)}}/>`}
+
+function NoteView({note,upd,onAsk,onShare,onMove}){
+  const focus=useRef(null);
+  const fref=id=>e=>{if(e&&focus.current===id){focus.current=null;e.focus()}};
+  const set=fn=>upd(note.id,n=>({...n,...fn(n)}));
+  const setB=(id,p)=>set(n=>({blocks:n.blocks.map(b=>b.id===id?{...b,...p}:b)}));
+  const addB=(k,after)=>{const b={id:uid(),k,t:"",d:false};focus.current=b.id;set(n=>{const i=after?n.blocks.findIndex(x=>x.id===after)+1:n.blocks.length;const a=n.blocks.slice();a.splice(i,0,b);return{blocks:a}})};
+  const rm=(id,back)=>{const i=note.blocks.findIndex(x=>x.id===id);if(back&&i>0)focus.current=note.blocks[i-1].id;set(n=>({blocks:n.blocks.filter(x=>x.id!==id)}))};
+  const flip=b=>{focus.current=b.id;setB(b.id,{k:b.k==="c"?"p":"c",d:false})};
+  return html`<div>
+    <div class="bar">
+      <${IB} n="back" label="رجوع" onClick=${()=>{location.hash=note.folder?"#/f/"+note.folder:""}}/><span class="sp"></span>
+      <div class="sw">${THEMES.map((t,i)=>html`<button key=${i} aria-pressed=${note.theme===i} aria-label=${"لون "+(i+1)} style=${{background:grad(i)}} onClick=${()=>set(()=>({theme:i}))}></button>`)}</div>
+    </div>
+    <article class="sheet" style=${{background:grad(note.theme)}}>
+      <input class="ttl" placeholder="اسم الموضوع" value=${note.title} onInput=${e=>set(()=>({title:e.target.value}))}/>
+      ${note.blocks.map(b=>b.k==="c"
+        ?html`<div class="blk" key=${b.id}>
+            <input type="checkbox" checked=${b.d} aria-label="تم" onChange=${e=>setB(b.id,{d:e.target.checked})}/>
+            <input class="bt" placeholder="عنصر" value=${b.t} ref=${fref(b.id)} onInput=${e=>setB(b.id,{t:e.target.value})}
+              onKeyDown=${e=>{if(e.key==="Enter"){e.preventDefault();addB("c",b.id)}else if(e.key==="Backspace"&&!b.t){e.preventDefault();rm(b.id,true)}}}/>
+            <button class="mini" title="حوّل لكتابة عادية" aria-label="حوّل لكتابة عادية" onClick=${()=>flip(b)}><${Ic} n="text" s=${18}/></button>
+            <button class="mini" title="احذف" aria-label="احذف" onClick=${()=>rm(b.id)}><${Ic} n="x" s=${18}/></button>
+          </div>`
+        :html`<div class="blk" key=${b.id}>
+            <${TA} value=${b.t} r=${fref(b.id)} onInput=${e=>setB(b.id,{t:e.target.value})}/>
+            <button class="mini" title="حوّل لعنصر قائمة" aria-label="حوّل لعنصر قائمة" onClick=${()=>flip(b)}><${Ic} n="list" s=${18}/></button>
+            <button class="mini" title="احذف" aria-label="احذف" onClick=${()=>rm(b.id)}><${Ic} n="x" s=${18}/></button>
+          </div>`)}
+      <div class="addbar"><button title="عنصر قائمة" aria-label="عنصر قائمة" onClick=${()=>addB("c")}><${Ic} n="plus" s=${16}/><${Ic} n="list" s=${18}/></button><button title="كتابة" aria-label="كتابة" onClick=${()=>addB("p")}><${Ic} n="plus" s=${16}/><${Ic} n="text" s=${18}/></button></div>
+      <div class="sig" dir="ltr">${SIG}</div>
+    </article>
+    <div class="bar" style=${{marginTop:16}}>
+      <${IB} c="main" n="share" label="شارك كصورة" onClick=${onShare}/><${IB} n="move" label="انقل لمكان تاني" onClick=${()=>onMove(note.id)}/><span class="sp"></span>
+      <${IB} c="danger" n="trash" label="احذف النوت" onClick=${()=>onAsk(note.id)}/>
+    </div>
+  </div>`}
+
+function Home({notes,folders,folder,user,avatar,onProfile,count,onAdd,onNewFolder,onAsk,onMove,onFolderAsk,onFolderEdit,onLogout}){
+  const empty=!notes.length&&!folders.length;
+  return html`<div>
+    <div class="top">${folder&&html`<${IB} n="back" label="رجوع" onClick=${()=>{location.hash=""}}/>`}<button class="ubox" onClick=${onProfile} aria-label="صورة الحساب"><${Avatar} src=${avatar} name=${user} size=${40} badge=${true}/><span class="un">${user}</span></button><span class="sp"></span><${ThemeBtn}/><button class="sq" onClick=${onLogout} aria-label="خروج" title="خروج"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style=${{transform:"scaleX(-1)"}}><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg></button></div>
+    ${folder?html`<h1>${(folder.icon||"📁")+" "+folder.name}</h1>`:html`<h1>📝 my work note</h1>`}
+    <main class="grid">
+      <button class="add" aria-label="نوت جديدة" title="نوت جديدة" onClick=${onAdd}><${Ic} n="plus" s=${34}/></button>
+      ${!folder&&html`<button class="add addf" aria-label="مجلد جديد" title="مجلد جديد" onClick=${onNewFolder}><${Ic} n="folderplus" s=${34}/></button>`}
+      ${empty&&html`<p class="empty">${folder?"المجلد فاضي. دوس + وضيف نوت":"دوس على + وابدأ أول نوت"}</p>`}
+      ${folders.map(f=>html`<div class="nw" key=${f.id}>
+        <a class="note fold" href=${"#/f/"+f.id}><div class="nb"><span class="fic">${f.icon||"📁"}</span><h2>${f.name}</h2><p>${count(f.id)+" نوت"}</p></div></a>
+        <button class="cdel" aria-label="احذف المجلد" title="احذف المجلد" onClick=${()=>onFolderAsk(f.id)}><${Ic} n="trash" s=${16}/></button>
+        <button class="cmove" aria-label="غيّر الاسم" title="غيّر الاسم" onClick=${()=>onFolderEdit(f)}><${Ic} n="edit" s=${16}/></button>
+      </div>`)}
+      ${notes.map(n=>html`<div class="nw" key=${n.id}>
+        <a class="note" href=${"#/n/"+n.id}>
+          <span class="cov" style=${{background:grad(n.theme)}}></span>
+          <div class="nb"><h2>${n.title||"من غير اسم"}</h2>
+          ${n.blocks.slice(0,4).map(b=>html`<p key=${b.id}>${(b.k==="c"?(b.d?"✔ ":"○ "):"")+b.t.slice(0,90)}</p>`)}</div>
+        </a>
+        <button class="cdel" aria-label="احذف النوت" title="احذف النوت" onClick=${()=>onAsk(n.id)}><${Ic} n="trash" s=${16}/></button>
+        <button class="cmove" aria-label="انقل النوت" title="انقل النوت" onClick=${()=>onMove(n.id)}><${Ic} n="move" s=${16}/></button>
+      </div>`)}
+    </main>
+    <div class="foot" dir="ltr">${SIG}</div>
+  </div>`}
+
+function Shell({user,onLogout}){
+  const key="mwn:notes:"+user,fkey="mwn:folders:"+user;
+  const [notes,setNotes]=useState(()=>store.get(key,[]).map(norm));
+  const [folders,setFolders]=useState(()=>store.get(fkey,[]));
+  useEffect(()=>{store.set(key,notes)},[notes,key]);
+  useEffect(()=>{store.set(fkey,folders)},[folders,fkey]);
+  const [hash,setHash]=useState(location.hash);
+  useEffect(()=>{const f=()=>setHash(location.hash);addEventListener("hashchange",f);return()=>removeEventListener("hashchange",f)},[]);
+  const [ask,setAsk]=useState(null);
+  const [img,setImg]=useState(null);
+  const [mv,setMv]=useState(null);
+  const [nm,setNm]=useState(null);
+  const akey="mwn:avatar:"+user;
+  const [avatar,setAvatar]=useState(()=>store.get(akey,null));
+  useEffect(()=>{store.set(akey,avatar)},[avatar,akey]);
+  const [prof,setProf]=useState(false);
+  const m=hash.match(/^#\/n\/(.+)$/),fm=hash.match(/^#\/f\/(.+)$/);
+  const note=m?notes.find(n=>n.id===m[1]):null;
+  const folder=fm?(folders.find(f=>f.id===fm[1])||null):null;
+  const inRoot=n=>!n.folder||!folders.some(f=>f.id===n.folder);
+  const shown=folder?notes.filter(n=>n.folder===folder.id):notes.filter(inRoot);
+  const count=id=>notes.filter(n=>n.folder===id).length;
+  const upd=(id,fn)=>setNotes(ns=>ns.map(n=>n.id===id?fn(n):n));
+  const add=()=>{const n={id:uid(),title:"",folder:folder?folder.id:null,theme:notes.length%THEMES.length,blocks:[]};setNotes(ns=>[n,...ns]);location.hash="#/n/"+n.id};
+  const del=()=>{
+    const a=ask;setAsk(null);
+    if(a.t==="note"){setNotes(ns=>ns.filter(n=>n.id!==a.id));if(note&&note.id===a.id)location.hash=note.folder?"#/f/"+note.folder:""}
+    else{setFolders(fs=>fs.filter(f=>f.id!==a.id));setNotes(ns=>ns.map(n=>n.folder===a.id?{...n,folder:null}:n));if(folder&&folder.id===a.id)location.hash=""}};
+  const moveTo=dest=>{upd(mv,n=>({...n,folder:dest}));setMv(null)};
+  const saveName=(v,ic)=>{
+    if(nm.id)setFolders(fs=>fs.map(f=>f.id===nm.id?{...f,name:v,icon:ic}:f));
+    else setFolders(fs=>[...fs,{id:uid(),name:v,icon:ic}]);
+    setNm(null)};
+  const share=async()=>{const b=await makeImage(note);if(b)setImg({blob:b,url:URL.createObjectURL(b),name:"note-"+note.id+".png",title:note.title})};
+  const askNote=id=>setAsk({t:"note",id});
+  const mvNote=mv?notes.find(n=>n.id===mv):null;
+  return html`<${React.Fragment}>
+    ${note?html`<${NoteView} key=${note.id} note=${note} upd=${upd} onAsk=${askNote} onMove=${setMv} onShare=${share}/>`
+          :html`<${Home} notes=${shown} folders=${folder?[]:folders} folder=${folder} user=${user} count=${count}
+              onAdd=${add} avatar=${avatar} onProfile=${()=>setProf(true)} onNewFolder=${()=>setNm({init:"",icon:"📁"})} onAsk=${askNote} onMove=${setMv}
+              onFolderAsk=${id=>setAsk({t:"folder",id})} onFolderEdit=${f=>setNm({id:f.id,init:f.name,icon:f.icon||"📁"})} onLogout=${onLogout}/>`}
+    ${ask&&html`<${Confirm} text=${ask.t==="note"?"تحذف النوت دي نهائياً؟":"تحذف المجلد ده؟ النوتس اللي جواه هترجع للرئيسية."} yes=${ask.t==="note"?"احذف":"احذف المجلد"} onYes=${del} onNo=${()=>setAsk(null)}/>`}
+    ${mv&&html`<${MoveModal} folders=${folders} current=${mvNote&&!inRoot(mvNote)?mvNote.folder:null} onPick=${moveTo} onClose=${()=>setMv(null)}/>`}
+    ${nm&&html`<${NameModal} title=${nm.id?"غيّر اسم المجلد":"مجلد جديد"} init=${nm.init} icon=${nm.icon} onSave=${saveName} onClose=${()=>setNm(null)}/>`}
+    ${prof&&html`<${ProfileModal} user=${user} avatar=${avatar} onSave=${setAvatar} onClose=${()=>setProf(false)}/>`}
+    ${img&&html`<${ShareModal} img=${img} onClose=${()=>setImg(null)}/>`}
+  <//>`}
+
+function Login({onEnter}){
+  const [name,setName]=useState("");
+  const [msg,setMsg]=useState("");
+  const users=store.get("mwn:users",[]);
+  function go(mode,e){
+    if(e)e.preventDefault();
+    const c=name.trim();
+    if(!/^[\w\u0600-\u06FF.\- ]{2,20}$/.test(c)){setMsg("اليوزر من 2 لـ 20 حرف (حروف وأرقام ونقطة وشرطة).");return}
+    const found=users.find(u=>u.toLowerCase()===c.toLowerCase());
+    if(mode==="login"){if(!found){setMsg("اليوزر ده مش مسجل. اضغط تسجيل حساب جديد.");return}onEnter(found);return}
+    if(found){setMsg("اليوزر ده موجود. اضغط دخول.");return}
+    const legacy=users.length===0?store.get("mwn",null):null;
+    store.set("mwn:users",[...users,c]);
+    if(Array.isArray(legacy)&&legacy.length)store.set("mwn:notes:"+c,legacy);
+    onEnter(c)}
+  return html`<${React.Fragment}><div class="lt"><${ThemeBtn}/></div><form class="login" onSubmit=${e=>go("login",e)}>
+    <h1 dir="ltr">my work note</h1>
+    <input value=${name} placeholder="اليوزر" autoComplete="username" autoFocus onInput=${e=>{setName(e.target.value);setMsg("")}}/>
+    <div class="bar"><${IB} type="submit" c="main" n="login" label="دخول"/><${IB} n="userplus" label="تسجيل حساب جديد" onClick=${()=>go("register")}/></div>
+    <p class="msg">${msg||"اكتب اليوزر بس، من غير باسورد"}</p>
+    ${users.length>0&&html`<div class="chips">${users.map(u=>html`<button type="button" key=${u} onClick=${()=>setName(u)}>${u}</button>`)}</div>`}
+    <div class="foot" dir="ltr">${SIG}</div>
+  </form><//>`}
+
+function App(){
+  const [user,setUser]=useState(()=>{const u=store.get("mwn:session",null);return u&&store.get("mwn:users",[]).includes(u)?u:null});
+  const enter=u=>{store.set("mwn:session",u);location.hash="";setUser(u)};
+  const out=()=>{store.set("mwn:session",null);location.hash="";setUser(null)};
+  return user?html`<${Shell} key=${user} user=${user} onLogout=${out}/>`:html`<${Login} onEnter=${enter}/>`}
+applyTheme(store.get("mwn:theme",null));
+ReactDOM.createRoot(document.getElementById("app")).render(html`<${App}/>`);
+}
+</script>
+</body>
+</html>
