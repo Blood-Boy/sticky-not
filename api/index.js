@@ -1,6 +1,6 @@
 const path = require("path");
 const fs = require("fs");
-require("dotenv").config({ path: path.join(__dirname, "..", "..", ".env") });
+require("dotenv").config({ path: path.join(__dirname, "..", ".env") });
 require("dotenv").config();
 
 const crypto = require("crypto");
@@ -295,9 +295,9 @@ app.delete("/api/notes/:id", auth, async (req, res) => {
   }
 });
 
-/* ---------------- static (production build) ---------------- */
+/* ---------------- static (local production run) ---------------- */
 
-const dist = path.join(__dirname, "..", "..", "client", "dist");
+const dist = path.join(__dirname, "..", "dist");
 if (fs.existsSync(dist)) {
   app.use(express.static(dist));
   app.get(/^(?!\/api).*/, (req, res) => res.sendFile(path.join(dist, "index.html")));
@@ -305,9 +305,13 @@ if (fs.existsSync(dist)) {
 
 app.use("/api", (req, res) => res.status(404).json({ error: "notfound" }));
 
-app.listen(PORT, () => {
-  console.log("sticky-not server on http://localhost:" + PORT);
-  if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
-    console.warn("warning: SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY are not set - API calls will fail until .env is filled in");
-  }
-});
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log("sticky-not server on http://localhost:" + PORT);
+    if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      console.warn("warning: SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY are not set - API calls will fail until .env is filled in");
+    }
+  });
+}
+
+module.exports = app;

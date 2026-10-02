@@ -3,21 +3,26 @@
 تطبيق نوتس بالعربي — نفس التطبيق القديم (html + localStorage) دلوقتي موجود على:
 
 - **React 18 (Vite)** — الواجهة
-- **Node.js + Express** — الـ API (server)
+- **Node.js + Express** — الـ API
 - **Supabase (Postgres)** — التخزين
 
-اللي بيتخزن في Supabase دلوقتي: اليوزرات، الصور الشخصية، المجلدات، والنوتس (بلايك: checklist + كتابة).
+اللي بيتخزن في Supabase: اليوزرات، الصور الشخصية، المجلدات، والنوتس (checklist + كتابة).
 
 ## البنية
 
 ```
-├── client/    React + Vite (الواجهة)
-├── server/    Express API + Supabase
-├── supabase/  schema.sql (جداول + RLS)
-└── .env       إعدادات الاتصال (مبتتكتبش في git)
+├── api/         Express app — شغال محلياً كسيرفر، وعلى Vercel كـ serverless function
+├── src/         كومبوننتات الواجهة (React)
+├── supabase/    schema.sql (جداول + RLS)
+├── vite.config.js / index.html / package.json
+└── .env         إعدادات الاتصال (مبتتكتبش في git)
 ```
 
-## الإعداد
+الـ API بتاعه ملف واحد `api/index.js` بيشتغل في الاتنين:
+- محلي: `node api/index.js` (سيرفر على البورت 4000)
+- Vercel: أي request على `/api/*` بيوصله مباشرة كـ function
+
+## إعداد Supabase
 
 1. اعمل project في Supabase (https://supabase.com)
 2. من **SQL Editor** شغّل ملف `supabase/schema.sql`
@@ -25,30 +30,38 @@
    - `SUPABASE_URL` — من Settings → Project
    - `SUPABASE_SERVICE_ROLE_KEY` — من Settings → API (service_role)
    - `JWT_SECRET` — أي كلمة طويلة عشوائية
-4. ثبّت الـ dependencies:
+
+## التشغيل محلياً
 
 ```bash
-npm run setup
-```
-
-## التشغيل
-
-```bash
+npm install
 npm run dev
 ```
 
 - الواجهة: http://localhost:5173
 - الـ API: http://localhost:4000
 
-## الإنتاج (production)
+## النشر على Vercel
+
+1. من [vercel.com](https://vercel.com) → **Add New → Project** → اختار repo `Blood-Boy/sticky-not`
+2. Vercel هتكتشف Vite تلقائياً — تقدر تسيب الإعدادات افتراضية (Build Command: `npm run build`، Output: `dist`)
+3. في **Environment Variables** ضيف الاتلات:
+   - `SUPABASE_URL`
+   - `SUPABASE_SERVICE_ROLE_KEY`
+   - `JWT_SECRET`
+4. **Deploy** — الموقع هيخرج على `https://<name>.vercel.app`
+
+كل الـ API على نفس الدومين (`/api/...`) فعلش CORS.
+
+## الإنتاج على جهازك (بدون Vercel)
 
 ```bash
-npm run build   # يبني الواجهة في client/dist
-npm start       # السيرفير بيقدّم الواجهة نفسها على http://localhost:4000
+npm run build   # يبني الواجهة في dist/
+npm start       # السيرفير بيقدّم الواجهة + الـ API على http://localhost:4000
 ```
 
 ## ملاحظات
 
 - مفيش باسورد: الدخول باليوزرنيم بس (زي النسخة القديمة)، والجلسة بتتم بي JWT.
-- `SUPABASE_SERVICE_ROLE_KEY` لازم تبقى في السيرفر بس، مبقاش في المتصفح. التابلز محمية بـ RLS من أي وصول مباشر.
+- `SUPABASE_SERVICE_ROLE_KEY` لازم تبقى في السيرفر/الـ function بس، مش في المتصفح. الجداول محمية بـ RLS من أي وصول مباشر.
 - `.env` في الـ `.gitignore` عشان كده مكتبتش في git.
