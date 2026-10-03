@@ -6,9 +6,13 @@ create extension if not exists pgcrypto;
 create table if not exists public.profiles (
   id uuid primary key default gen_random_uuid(),
   username text not null unique,
+  password_hash text,
   avatar text,
   created_at timestamptz not null default now()
 );
+
+-- for databases created before passwords were added
+alter table public.profiles add column if not exists password_hash text;
 
 create table if not exists public.folders (
   id uuid primary key default gen_random_uuid(),

@@ -8,6 +8,7 @@ const RECENT_KEY = "mwn:recent";
 
 export default function Login({ onEnter }) {
   const [name, setName] = React.useState("");
+  const [pass, setPass] = React.useState("");
   const [msg, setMsg] = React.useState("");
   const [busy, setBusy] = React.useState(false);
   const recents = store.get(RECENT_KEY, []);
@@ -25,17 +26,29 @@ export default function Login({ onEnter }) {
       setMsg("اليوزر من 2 لـ 20 حرف (حروف وأرقام ونقطة وشرطة).");
       return;
     }
+    if (!pass) {
+      setMsg("اكتب الباسورد.");
+      return;
+    }
+    if (mode === "register" && pass.length < 6) {
+      setMsg("الباسورد لازم يكون 6 حروف على الأقل.");
+      return;
+    }
     setBusy(true);
     setMsg("");
     try {
-      const data = mode === "login" ? await api.login(c) : await api.register(c);
+      const data = mode === "login" ? await api.login(c, pass) : await api.register(c, pass);
       setToken(data.token);
       pushRecent(c);
       onEnter(c);
     } catch (err) {
       if (err.message === "exists") setMsg("اليوزر ده موجود. اضغط دخول.");
-      else if (err.message === "notfound") setMsg("اليوزر ده مش مسجل. اضغط تسجيل حساب جديد.");
+      else if (err.message === "badcreds") setMsg("اليوزر أو الباسورد غلط.");
+      else if (err.message === "badpass") setMsg("الباسورد من 6 لـ 128 حرف.");
       else if (err.message === "badname") setMsg("اليوزر من 2 لـ 20 حرف.");
+      else if (err.message === "toomany") setMsg("محاولات كتير غلط. استنى شوية وجرّب تاني.");
+      else if (err.message === "nopassword")
+        setMsg("الحساب ده اتعمل قبل الباسورد. حط له باسورد بـ server/set-password.js (الشرح في README).");
       else setMsg("حصلت مشكلة في الاتصال. اتأكد إن السيرفر شغال وجرّب تاني.");
     } finally {
       setBusy(false);
@@ -59,11 +72,22 @@ export default function Login({ onEnter }) {
             setMsg("");
           }}
         />
+        <input
+          type="password"
+          value={pass}
+          placeholder="الباسورد"
+          autoComplete="current-password"
+          maxLength={128}
+          onInput={(e) => {
+            setPass(e.target.value);
+            setMsg("");
+          }}
+        />
         <div className="bar">
           <IB type="submit" c="main" n="login" label="دخول" disabled={busy} />
           <IB n="userplus" label="تسجيل حساب جديد" disabled={busy} onClick={() => go("register")} />
         </div>
-        <p className="msg">{msg || "اكتب اليوزر بس، من غير باسورد"}</p>
+        <p className="msg">{msg || "اكتب اليوزر والباسورد"}</p>
         {recents.length > 0 && (
           <div className="chips">
             {recents.map((u) => (
