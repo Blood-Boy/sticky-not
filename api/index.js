@@ -8,10 +8,40 @@ const express = require("express");
 const cors = require("cors");
 const jwt = require("jsonwebtoken");
 const { createClient } = require("@supabase/supabase-js");
+const { hashPassword, verifyPassword, fakeVerify } = require("../server/password.js");
 
 const PORT = process.env.PORT || 4000;
+const IS_PROD = !!process.env.VERCEL || process.env.NODE_ENV === "production";
+if (IS_PROD && !process.env.JWT_SECRET) {
+  throw new Error("JWT_SECRET must be set in production");
+}
 const SECRET = process.env.JWT_SECRET || "dev-only-change-me";
 const NAME_RE = /^[\w\u0600-\u06FF.\- ]{2,20}$/;
+const PASS_MIN = 6;
+const PASS_MAX = 128;
+
+// best-effort brute-force guard (in-memory, so per server instance)
+const fails = new Map();
+const WINDOW = 15 * 60 * 1000;
+function recent(key) {
+  const now = Date.now();
+  const a = (fails.get(key) || []).filter((t) => now - t < WINDOW);
+  if (a.length) fails.set(key, a);
+  else fails.delete(key);
+  return a;
+}
+function tooMany(key) {
+  return recent(key).length >= 10;
+}
+function noteFail(key) {
+  if (fails.size > 5000) fails.clear();
+  fails.set(key, [...recent(key), Date.now()]);
+}
+
+// ilike treats % and _ as wildcards; usernames may contain "_"
+function likeExact(s) {
+  return s.replace(/[\\%_]/g, "\\$&");
+}
 
 let sb = null;
 function supa() {
@@ -80,14 +110,28 @@ async function owned(table, id, uid) {
 app.post("/api/auth/login", async (req, res) => {
   try {
     const c = String(req.body.username || "").trim();
+    const pw = typeof req.body.password === "string" ? req.body.password : "";
     if (!NAME_RE.test(c)) return res.status(400).json({ error: "badname" });
+    if (!pw || pw.length > PASS_MAX) return res.status(400).json({ error: "badcreds" });
+    const key = c.toLowerCase();
+    if (tooMany(key)) return res.status(429).json({ error: "toomany" });
     const { data, error } = await supa()
       .from("profiles")
-      .select("id")
-      .ilike("username", c)
+      .select("id, password_hash")
+      .ilike("username", likeExact(c))
       .maybeSingle();
     if (error) throw error;
-    if (!data) return res.status(404).json({ error: "notfound" });
+    if (!data) {
+      await fakeVerify(pw);
+      noteFail(key);
+      return res.status(400).json({ error: "badcreds" });
+    }
+    if (!data.password_hash) return res.status(403).json({ error: "nopassword" });
+    if (!(await verifyPassword(pw, data.password_hash))) {
+      noteFail(key);
+      return res.status(400).json({ error: "badcreds" });
+    }
+    fails.delete(key);
     res.json({ token: sign(data.id) });
   } catch (e) {
     res.status(500).json({ error: "server" });
@@ -97,11 +141,17 @@ app.post("/api/auth/login", async (req, res) => {
 app.post("/api/auth/register", async (req, res) => {
   try {
     const c = String(req.body.username || "").trim();
+    const pw = typeof req.body.password === "string" ? req.body.password : "";
     if (!NAME_RE.test(c)) return res.status(400).json({ error: "badname" });
+    if (pw.length < PASS_MIN || pw.length > PASS_MAX) return res.status(400).json({ error: "badpass" });
     const db = supa();
-    const { data: dup } = await db.from("profiles").select("id").ilike("username", c).maybeSingle();
+    const { data: dup } = await db.from("profiles").select("id").ilike("username", likeExact(c)).maybeSingle();
     if (dup) return res.status(409).json({ error: "exists" });
-    const { data, error } = await db.from("profiles").insert({ username: c }).select("id").single();
+    const { data, error } = await db
+      .from("profiles")
+      .insert({ username: c, password_hash: await hashPassword(pw) })
+      .select("id")
+      .single();
     if (error) throw error;
     res.json({ token: sign(data.id) });
   } catch (e) {

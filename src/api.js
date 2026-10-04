@@ -41,10 +41,10 @@ async function req(path, opts = {}) {
 }
 
 export const api = {
-  login: (username) =>
-    req("/api/auth/login", { method: "POST", body: JSON.stringify({ username }) }),
-  register: (username) =>
-    req("/api/auth/register", { method: "POST", body: JSON.stringify({ username }) }),
+  login: (username, password) =>
+    req("/api/auth/login", { method: "POST", body: JSON.stringify({ username, password }) }),
+  register: (username, password) =>
+    req("/api/auth/register", { method: "POST", body: JSON.stringify({ username, password }) }),
   me: () => req("/api/me"),
   setAvatar: (avatar) =>
     req("/api/me/avatar", { method: "PUT", body: JSON.stringify({ avatar }) }),
