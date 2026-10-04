@@ -43,15 +43,49 @@ function likeExact(s) {
   return s.replace(/[\\%_]/g, "\\$&");
 }
 
+// The server needs a privileged key (service_role / sb_secret_...). The public
+// anon / sb_publishable_... key is subject to RLS, which is locked down on every
+// table, so with it reads come back empty and writes fail with 42501.
+function isPublicKey(k) {
+  if (k.startsWith("sb_publishable_")) return true;
+  if (k.startsWith("sb_secret_")) return false;
+  try {
+    const claims = JSON.parse(Buffer.from(k.split(".")[1], "base64url").toString("utf8"));
+    return claims.role !== "service_role";
+  } catch (e) {
+    return false;
+  }
+}
+
+function serviceKey() {
+  const found = [process.env.SUPABASE_SERVICE_ROLE_KEY, process.env.SUPABASE_SECRET_KEY].find(
+    (k) => k && !isPublicKey(k)
+  );
+  if (found) return found;
+  const set = !!(process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY);
+  throw new Error(
+    set
+      ? "MISSING_SERVICE_KEY: SUPABASE_SERVICE_ROLE_KEY holds a public (anon / publishable) key; set it to the service_role / secret key"
+      : "MISSING_SERVICE_KEY: set SUPABASE_SERVICE_ROLE_KEY"
+  );
+}
+
 let sb = null;
 function supa() {
-  if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
-    throw new Error("MISSING_SUPABASE_CONFIG");
-  }
+  if (!process.env.SUPABASE_URL) throw new Error("MISSING_SUPABASE_URL");
   if (!sb) {
-    sb = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
+    sb = createClient(process.env.SUPABASE_URL, serviceKey(), {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
   }
   return sb;
+}
+
+// every failed request ends up here, so the cause shows in the Vercel logs
+// (message / code only - never request bodies, passwords or keys)
+function fail(res, where, e) {
+  console.error("[api] " + where + ":", (e && e.code) || "", (e && e.message) || e);
+  return res.status(500).json({ error: "server" });
 }
 
 function sign(uid) {
@@ -134,7 +168,7 @@ app.post("/api/auth/login", async (req, res) => {
     fails.delete(key);
     res.json({ token: sign(data.id) });
   } catch (e) {
-    res.status(500).json({ error: "server" });
+    return fail(res, "login", e);
   }
 });
 
@@ -158,7 +192,7 @@ app.post("/api/auth/register", async (req, res) => {
     if (String((e && e.message) || "").toLowerCase().includes("duplicate")) {
       return res.status(409).json({ error: "exists" });
     }
-    res.status(500).json({ error: "server" });
+    return fail(res, "register", e);
   }
 });
 
@@ -174,7 +208,7 @@ app.get("/api/me", auth, async (req, res) => {
     if (error || !data) return res.status(404).json({ error: "notfound" });
     res.json({ username: data.username, avatar: data.avatar || null });
   } catch (e) {
-    res.status(500).json({ error: "server" });
+    return fail(res, "me", e);
   }
 });
 
@@ -191,7 +225,7 @@ app.put("/api/me/avatar", auth, async (req, res) => {
     if (error) throw error;
     res.json({ ok: true, avatar });
   } catch (e) {
-    res.status(500).json({ error: "server" });
+    return fail(res, "avatar", e);
   }
 });
 
@@ -207,7 +241,7 @@ app.get("/api/folders", auth, async (req, res) => {
     if (error) throw error;
     res.json((data || []).map((f) => ({ id: f.id, name: f.name, icon: f.icon || null })));
   } catch (e) {
-    res.status(500).json({ error: "server" });
+    return fail(res, "folders list", e);
   }
 });
 
@@ -224,7 +258,7 @@ app.post("/api/folders", auth, async (req, res) => {
     if (error) throw error;
     res.json({ id: data.id, name: data.name, icon: data.icon || null });
   } catch (e) {
-    res.status(500).json({ error: "server" });
+    return fail(res, "folders add", e);
   }
 });
 
@@ -248,7 +282,7 @@ app.patch("/api/folders/:id", auth, async (req, res) => {
     if (error) throw error;
     res.json({ id: data.id, name: data.name, icon: data.icon || null });
   } catch (e) {
-    res.status(500).json({ error: "server" });
+    return fail(res, "folders update", e);
   }
 });
 
@@ -260,7 +294,7 @@ app.delete("/api/folders/:id", auth, async (req, res) => {
     if (error) throw error;
     res.status(204).end();
   } catch (e) {
-    res.status(500).json({ error: "server" });
+    return fail(res, "folders delete", e);
   }
 });
 
@@ -276,7 +310,7 @@ app.get("/api/notes", auth, async (req, res) => {
     if (error) throw error;
     res.json((data || []).map(toNote));
   } catch (e) {
-    res.status(500).json({ error: "server" });
+    return fail(res, "notes list", e);
   }
 });
 
@@ -300,7 +334,7 @@ app.post("/api/notes", auth, async (req, res) => {
     if (error) throw error;
     res.json(toNote(data));
   } catch (e) {
-    res.status(500).json({ error: "server" });
+    return fail(res, "notes add", e);
   }
 });
 
@@ -329,7 +363,7 @@ app.put("/api/notes/:id", auth, async (req, res) => {
     if (error) throw error;
     res.json(toNote(data));
   } catch (e) {
-    res.status(500).json({ error: "server" });
+    return fail(res, "notes update", e);
   }
 });
 
@@ -341,7 +375,7 @@ app.delete("/api/notes/:id", auth, async (req, res) => {
     if (error) throw error;
     res.status(204).end();
   } catch (e) {
-    res.status(500).json({ error: "server" });
+    return fail(res, "notes delete", e);
   }
 });
 
@@ -358,8 +392,10 @@ app.use("/api", (req, res) => res.status(404).json({ error: "notfound" }));
 if (require.main === module) {
   app.listen(PORT, () => {
     console.log("sticky-not server on http://localhost:" + PORT);
-    if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
-      console.warn("warning: SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY are not set - API calls will fail until .env is filled in");
+    try {
+      supa();
+    } catch (e) {
+      console.warn("warning: " + e.message);
     }
   });
 }
