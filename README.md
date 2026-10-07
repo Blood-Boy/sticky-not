@@ -74,6 +74,10 @@ alter table public.profiles add column if not exists password_hash text;
 NEW_PASSWORD='باسوردك' node server/set-password.js اسم_اليوزر
 ```
 
+## فيتشرز
+
+- [التعاون على المجلدات والنوتس](docs/collaboration.md): مشاركة نوت أو مجلد مع يوزر تاني والتعديل مع بعض (قيد التنفيذ).
+
 ## ملاحظات
 
 - الدخول باليوزر والباسورد (6 حروف على الأقل). الباسورد بيتخزن مشفّر (scrypt) في `profiles.password_hash`، والجلسة بتتم بـ JWT.
