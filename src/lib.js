@@ -48,6 +48,10 @@ export function norm(n) {
     title: n.title || "",
     folder: n.folder || null,
     theme: n.theme || 0,
+    version: n.version || 1,
+    role: n.role || "owner",
+    ownerId: n.ownerId || null,
+    owner: n.owner || null,
     blocks: b.map((x) => ({
       id: x.id || uid(),
       k: x.k === "c" ? "c" : "p",

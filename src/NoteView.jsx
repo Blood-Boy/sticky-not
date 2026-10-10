@@ -2,7 +2,7 @@ import React from "react";
 import { THEMES, grad, uid, SIG } from "./lib.js";
 import { IB, Ic, TA } from "./ui.jsx";
 
-export default function NoteView({ note, upd, onAsk, onShare, onMove }) {
+export default function NoteView({ note, upd, onAsk, onShare, onMove, onCollab }) {
   const focus = React.useRef(null);
   const fref = (id) => (e) => {
     if (e && focus.current === id) {
@@ -10,6 +10,7 @@ export default function NoteView({ note, upd, onAsk, onShare, onMove }) {
       e.focus();
     }
   };
+  const isEditor = note.role === "editor";
   const set = (fn) => upd(note.id, (n) => ({ ...n, ...fn(n) }));
   const setB = (id, p) =>
     set((n) => ({ blocks: n.blocks.map((b) => (b.id === id ? { ...b, ...p } : b)) }));
@@ -32,16 +33,18 @@ export default function NoteView({ note, upd, onAsk, onShare, onMove }) {
     focus.current = b.id;
     setB(b.id, { k: b.k === "c" ? "p" : "c", d: false });
   };
+
   return (
     <div>
       <div className="bar">
         <IB
           n="back"
           label="رجوع"
-          onClick={() => {
-            location.hash = note.folder ? "#/f/" + note.folder : "";
-          }}
+          onClick={() => { location.hash = note.folder ? "#/f/" + note.folder : ""; }}
         />
+        {isEditor && (
+          <span className="editorbadge">محرر</span>
+        )}
         <span className="sp"></span>
         <div className="sw">
           {THEMES.map((t, i) => (
@@ -50,16 +53,19 @@ export default function NoteView({ note, upd, onAsk, onShare, onMove }) {
               aria-pressed={note.theme === i}
               aria-label={"لون " + (i + 1)}
               style={{ background: grad(i) }}
-              onClick={() => set(() => ({ theme: i }))}
+              onClick={() => !isEditor && set(() => ({ theme: i }))}
+              disabled={isEditor}
             ></button>
           ))}
         </div>
       </div>
+
       <article className="sheet" style={{ background: grad(note.theme) }}>
         <input
           className="ttl"
           placeholder="اسم الموضوع"
           value={note.title}
+          disabled={isEditor}
           onInput={(e) => set(() => ({ title: e.target.value }))}
         />
         {note.blocks.map((b) =>
@@ -78,13 +84,8 @@ export default function NoteView({ note, upd, onAsk, onShare, onMove }) {
                 ref={fref(b.id)}
                 onInput={(e) => setB(b.id, { t: e.target.value })}
                 onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    addB("c", b.id);
-                  } else if (e.key === "Backspace" && !b.t) {
-                    e.preventDefault();
-                    rm(b.id, true);
-                  }
+                  if (e.key === "Enter") { e.preventDefault(); addB("c", b.id); }
+                  else if (e.key === "Backspace" && !b.t) { e.preventDefault(); rm(b.id, true); }
                 }}
               />
               <button className="mini" title="حوّل لكتابة عادية" aria-label="حوّل لكتابة عادية" onClick={() => flip(b)}>
@@ -108,23 +109,27 @@ export default function NoteView({ note, upd, onAsk, onShare, onMove }) {
         )}
         <div className="addbar">
           <button title="عنصر قائمة" aria-label="عنصر قائمة" onClick={() => addB("c")}>
-            <Ic n="plus" s={16} />
-            <Ic n="list" s={18} />
+            <Ic n="plus" s={16} /><Ic n="list" s={18} />
           </button>
           <button title="كتابة" aria-label="كتابة" onClick={() => addB("p")}>
-            <Ic n="plus" s={16} />
-            <Ic n="text" s={18} />
+            <Ic n="plus" s={16} /><Ic n="text" s={18} />
           </button>
         </div>
-        <div className="sig" dir="ltr">
-          {SIG}
-        </div>
+        <div className="sig" dir="ltr">{SIG}</div>
       </article>
+
       <div className="bar" style={{ marginTop: 16 }}>
         <IB c="main" n="share" label="شارك كصورة" onClick={onShare} />
-        <IB n="move" label="انقل لمكان تاني" onClick={() => onMove(note.id)} />
+        {!isEditor && onCollab && (
+          <IB n="userplus" label="شارك مع حد" onClick={onCollab} />
+        )}
+        {!isEditor && (
+          <IB n="move" label="انقل لمكان تاني" onClick={() => onMove(note.id)} />
+        )}
         <span className="sp"></span>
-        <IB c="danger" n="trash" label="احذف النوت" onClick={() => onAsk(note.id)} />
+        {!isEditor && (
+          <IB c="danger" n="trash" label="احذف النوت" onClick={() => onAsk(note.id)} />
+        )}
       </div>
     </div>
   );

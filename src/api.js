@@ -41,22 +41,54 @@ async function req(path, opts = {}) {
 }
 
 export const api = {
+  // Auth
   login: (username, password) =>
     req("/api/auth/login", { method: "POST", body: JSON.stringify({ username, password }) }),
   register: (username, password) =>
     req("/api/auth/register", { method: "POST", body: JSON.stringify({ username, password }) }),
+
+  // Profile
   me: () => req("/api/me"),
   setAvatar: (avatar) =>
     req("/api/me/avatar", { method: "PUT", body: JSON.stringify({ avatar }) }),
+
+  // Folders
   getFolders: () => req("/api/folders"),
   addFolder: (name, icon) =>
     req("/api/folders", { method: "POST", body: JSON.stringify({ name, icon }) }),
   updateFolder: (id, patch) =>
     req("/api/folders/" + id, { method: "PATCH", body: JSON.stringify(patch) }),
   removeFolder: (id) => req("/api/folders/" + id, { method: "DELETE" }),
-  getNotes: () => req("/api/notes"),
+
+  // Notes
+  getNotes: (ids) =>
+    req("/api/notes" + (ids && ids.length > 0 ? "?ids=" + ids.join(",") : "")),
   addNote: (n) => req("/api/notes", { method: "POST", body: JSON.stringify(n) }),
   updateNote: (id, patch) =>
     req("/api/notes/" + id, { method: "PUT", body: JSON.stringify(patch) }),
   removeNote: (id) => req("/api/notes/" + id, { method: "DELETE" }),
+
+  // Collaboration - user search
+  searchUsers: (q) =>
+    req("/api/users/search?q=" + encodeURIComponent(q)),
+
+  // Collaboration - shares (owner manages who can edit)
+  getShares: (kind, id) =>
+    req("/api/shares?" + kind + "=" + encodeURIComponent(id)),
+  addShare: (kind, id, username) =>
+    req("/api/shares", { method: "POST", body: JSON.stringify({ [kind]: id, username }) }),
+  removeShare: (id) =>
+    req("/api/shares/" + id, { method: "DELETE" }),
+
+  // Collaboration - inbox (invitee sees pending invites)
+  inbox: () => req("/api/inbox"),
+  respond: (id, accept) =>
+    req("/api/shares/" + id + "/respond", {
+      method: "POST",
+      body: JSON.stringify({ accept }),
+    }),
+
+  // Sync - poll for remote changes
+  sync: (since) =>
+    req("/api/sync" + (since ? "?since=" + encodeURIComponent(since) : "")),
 };
