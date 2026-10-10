@@ -94,6 +94,12 @@ function auth(req, res, next) {
 const app = express();
 app.use(cors());
 app.use(express.json({ limit: "2mb" }));
+// malformed JSON body → JSON 400 instead of Express's HTML error page
+app.use((err, req, res, next) => {
+  if (err && err.type === "entity.parse.failed") return res.status(400).json({ error: "badjson" });
+  if (err && err.type === "entity.too.large") return res.status(413).json({ error: "toolarge" });
+  return next(err);
+});
 
 /* ── Auth ── */
 

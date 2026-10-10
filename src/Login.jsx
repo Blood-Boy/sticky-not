@@ -49,7 +49,11 @@ export default function Login({ onEnter }) {
       else if (err.message === "toomany") setMsg("محاولات كتير غلط. استنى شوية وجرّب تاني.");
       else if (err.message === "nopassword")
         setMsg("الحساب ده اتعمل قبل الباسورد. حط له باسورد بـ server/set-password.js (الشرح في README).");
-      else setMsg("حصلت مشكلة في الاتصال. اتأكد إن السيرفر شغال وجرّب تاني.");
+      else if (err.message === "network")
+        setMsg("مقدرتش أوصل للسيرفر. اتأكد من النت وجرّب تاني.");
+      else if (err.message === "server" || err.message === "badjson")
+        setMsg("في مشكلة في السيرفر. جرّب تاني بعد شوية.");
+      else setMsg("حصلت مشكلة. جرّب تاني.");
     } finally {
       setBusy(false);
     }
