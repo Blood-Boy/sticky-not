@@ -2,6 +2,7 @@ import React from "react";
 import { api, getToken, setToken } from "./api.js";
 import Shell from "./Shell.jsx";
 import Login from "./Login.jsx";
+import { clearCaches } from "./cache.js";
 
 export default function App() {
   const [user, setUser] = React.useState(null);
@@ -38,6 +39,7 @@ export default function App() {
       user={user}
       onLogout={() => {
         setToken(null);
+        clearCaches();
         location.hash = "";
         setUser(null);
       }}

@@ -6,6 +6,7 @@ import NoteView from "./NoteView.jsx";
 import { Confirm, MoveModal, NameModal, ProfileModal, ShareModal } from "./modals.jsx";
 import { CollabModal, InboxModal } from "./collab.jsx";
 import Tracker from "./Tracker.jsx";
+import { readCache, writeCache } from "./cache.js";
 
 const POLL_MS = 6000;       // normal poll interval
 const POLL_FAST_MS = 3000;  // when a shared note is open
@@ -24,6 +25,7 @@ export default function Shell({ user, onLogout }) {
   const timers = React.useRef({});
   const syncTs = React.useRef(null);    // last sync timestamp
   const pollTimer = React.useRef(null);
+  const syncing = React.useRef(false);  // a sync request is in flight
   const dirty = React.useRef({});       // noteId → base blocks snapshot
 
   const say = (m) => {
@@ -33,12 +35,27 @@ export default function Shell({ user, onLogout }) {
 
   // ── Initial load ──
   React.useEffect(() => {
+    // Paint the last snapshot right away; the server answer replaces it below.
+    const cached = readCache(user);
+    if (cached) {
+      setNotes(cached.notes.map(norm));
+      setFolders(cached.folders);
+    }
     (async () => {
       try {
+        const syncedAt = new Date().toISOString();
         const [n, f] = await Promise.all([api.getNotes(), api.getFolders()]);
-        setNotes(n.map(norm));
+        // Keep local edits that are still saving; take everything else from the server.
+        setNotes((prev) => {
+          const fresh = n.map(norm);
+          const dirtyIds = Object.keys(dirty.current);
+          if (dirtyIds.length === 0) return fresh;
+          const keep = new Map(prev.filter((x) => dirty.current[x.id]).map((x) => [x.id, x]));
+          return fresh.map((x) => keep.get(x.id) || x);
+        });
         setFolders(f);
-        syncTs.current = new Date().toISOString();
+        writeCache(user, { notes: n, folders: f });
+        syncTs.current = syncedAt;
       } catch (e) {
         console.error(e);
         say("مقدرتش أجيب النوتس. اتأكد إن السيرفر شغال.");
@@ -70,6 +87,8 @@ export default function Shell({ user, onLogout }) {
   const isSharedNote = note && note.role === "editor";
 
   const doSync = React.useCallback(async () => {
+    if (syncing.current) return;   // one poll at a time
+    syncing.current = true;
     try {
       const since = syncTs.current;
       const { notes: updated, ts } = await api.sync(since);
@@ -100,13 +119,16 @@ export default function Shell({ user, onLogout }) {
     } catch (e) {
       // Silent - sync failures don't need UI noise
       console.warn("sync failed", e.message);
+    } finally {
+      syncing.current = false;
     }
   }, []);
 
   React.useEffect(() => {
     const interval = isSharedNote ? POLL_FAST_MS : POLL_MS;
     const tick = () => {
-      doSync();
+      // A hidden tab does not poll; it syncs once when it becomes visible again.
+      if (!document.hidden) doSync();
       pollTimer.current = setTimeout(tick, interval);
     };
     // Start after initial delay

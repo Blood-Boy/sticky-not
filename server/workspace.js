@@ -101,6 +101,21 @@ async function myScope(db, uid) {
   return data || [];
 }
 
+/** One query for all accepted shares of uid: { sharedNoteIds, sharedFolderIds } */
+async function acceptedShareIds(db, uid) {
+  const { data, error } = await db
+    .from("shares")
+    .select("note_id, folder_id")
+    .eq("invitee_id", uid)
+    .eq("status", "accepted");
+  if (error) throw error;
+  const rows = data || [];
+  return {
+    sharedNoteIds: rows.map((s) => s.note_id).filter(Boolean),
+    sharedFolderIds: rows.map((s) => s.folder_id).filter(Boolean),
+  };
+}
+
 /** Returns notes reachable by uid (own + shared) */
 async function reachableNotes(db, uid, cols = "id, title, folder_id, theme, blocks, version, updated_at, user_id", ids = null) {
   // Own notes
@@ -109,26 +124,7 @@ async function reachableNotes(db, uid, cols = "id, title, folder_id, theme, bloc
   const { data: own, error: e1 } = await ownQ;
   if (e1) throw e1;
 
-  // Shared notes (direct)
-  const { data: sharedNoteShares, error: e2 } = await db
-    .from("shares")
-    .select("note_id")
-    .eq("invitee_id", uid)
-    .eq("status", "accepted")
-    .not("note_id", "is", null);
-  if (e2) throw e2;
-
-  // Shared folders
-  const { data: sharedFolderShares, error: e3 } = await db
-    .from("shares")
-    .select("folder_id")
-    .eq("invitee_id", uid)
-    .eq("status", "accepted")
-    .not("folder_id", "is", null);
-  if (e3) throw e3;
-
-  const sharedNoteIds = (sharedNoteShares || []).map((s) => s.note_id).filter(Boolean);
-  const sharedFolderIds = (sharedFolderShares || []).map((s) => s.folder_id).filter(Boolean);
+  const { sharedNoteIds, sharedFolderIds } = await acceptedShareIds(db, uid);
 
   const extra = [];
 
@@ -311,12 +307,11 @@ function mountWorkspace(app, { supa, auth, fail }) {
 
       const all = await reachableNotes(db, uid, "id, title, folder_id, theme, blocks, version, updated_at, user_id", ids);
 
-      // Tag each note with role
-      const ownNoteSet = new Set();
-      const { data: ownCheck } = await db.from("notes").select("id").eq("user_id", uid);
-      (ownCheck || []).forEach((n) => ownNoteSet.add(n.id));
-
-      res.json(all.map((n) => toNote(n, ownNoteSet.has(n.id) ? "owner" : "editor")));
+      // Role comes from the row's owner, so no extra query is needed.
+      // private + no-cache: the browser may keep a copy but must revalidate;
+      // unchanged lists then come back as a 304 with no body.
+      res.set("Cache-Control", "private, no-cache");
+      res.json(all.map((n) => toNote(n, n.user_id === uid ? "owner" : "editor")));
     } catch (e) {
       return fail(res, "notes list ws", e);
     }
@@ -672,7 +667,9 @@ function mountWorkspace(app, { supa, auth, fail }) {
 
   /* ── Sync ── */
 
-  // Returns notes that changed since `since` (ISO string or epoch ms)
+  // Returns notes that changed since `since` (ISO string or epoch ms).
+  // Only changed rows are read: each query is filtered by updated_at, so a
+  // poll with nothing new costs one shares query plus cheap empty lookups.
   app.get("/api/sync", auth, async (req, res) => {
     try {
       const db = supa();
@@ -683,61 +680,36 @@ function mountWorkspace(app, { supa, auth, fail }) {
         const d = new Date(isNaN(since) ? since : Number(since));
         if (!isNaN(d.getTime())) sinceDate = d.toISOString();
       }
+      const COLS = "id, title, folder_id, theme, blocks, version, updated_at, user_id";
+      const ts = new Date().toISOString();
+      res.set("Cache-Control", "no-store");
 
-      let q = db.from("notes").select("id, title, folder_id, theme, blocks, version, updated_at, user_id");
-      const scopeIds = await getReachableNoteIds(db, uid);
-      if (scopeIds.length === 0) {
-        return res.json({ notes: [], ts: new Date().toISOString() });
+      const { sharedNoteIds, sharedFolderIds } = await acceptedShareIds(db, uid);
+
+      const withSince = (q) => (sinceDate ? q.gt("updated_at", sinceDate) : q);
+      const queries = [withSince(db.from("notes").select(COLS).eq("user_id", uid))];
+      if (sharedNoteIds.length > 0) {
+        queries.push(withSince(db.from("notes").select(COLS).in("id", sharedNoteIds).neq("user_id", uid)));
       }
-      q = q.in("id", scopeIds);
-      if (sinceDate) q = q.gt("updated_at", sinceDate);
+      if (sharedFolderIds.length > 0) {
+        queries.push(withSince(db.from("notes").select(COLS).in("folder_id", sharedFolderIds).neq("user_id", uid)));
+      }
+      const results = await Promise.all(queries);
 
-      const { data, error } = await q;
-      if (error) throw error;
-
-      // Determine role for each note
-      const ownNoteSet = new Set();
-      const { data: ownIds } = await db.from("notes").select("id").eq("user_id", uid).in("id", scopeIds);
-      (ownIds || []).forEach((n) => ownNoteSet.add(n.id));
+      const seen = new Map();
+      for (const { data, error } of results) {
+        if (error) throw error;
+        for (const n of data || []) seen.set(n.id, n);
+      }
 
       res.json({
-        notes: (data || []).map((n) => toNote(n, ownNoteSet.has(n.id) ? "owner" : "editor")),
-        ts: new Date().toISOString(),
+        notes: [...seen.values()].map((n) => toNote(n, n.user_id === uid ? "owner" : "editor")),
+        ts,
       });
     } catch (e) {
       return fail(res, "sync", e);
     }
   });
-}
-
-/** Helper to get all note IDs reachable by uid (for sync) */
-async function getReachableNoteIds(db, uid) {
-  const { data: own } = await db.from("notes").select("id").eq("user_id", uid);
-  const ownIds = (own || []).map((n) => n.id);
-
-  const { data: sharedNoteShares } = await db
-    .from("shares")
-    .select("note_id")
-    .eq("invitee_id", uid)
-    .eq("status", "accepted")
-    .not("note_id", "is", null);
-  const sharedNoteIds = (sharedNoteShares || []).map((s) => s.note_id).filter(Boolean);
-
-  const { data: sharedFolderShares } = await db
-    .from("shares")
-    .select("folder_id")
-    .eq("invitee_id", uid)
-    .eq("status", "accepted")
-    .not("folder_id", "is", null);
-  const sharedFolderIds = (sharedFolderShares || []).map((s) => s.folder_id).filter(Boolean);
-
-  let folderNoteIds = [];
-  if (sharedFolderIds.length > 0) {
-    const { data: fn } = await db.from("notes").select("id").in("folder_id", sharedFolderIds).neq("user_id", uid);
-    folderNoteIds = (fn || []).map((n) => n.id);
-  }
-
-  return [...new Set([...ownIds, ...sharedNoteIds, ...folderNoteIds])];
 }
 
 module.exports = { mountWorkspace };
