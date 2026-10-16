@@ -41,12 +41,12 @@ export function Secret({ label, value, mask }) {
   );
 }
 
-export function PeopleView({ clients, owners, onEditClient, onEditOwner, onDeleteOwner }) {
+export function PeopleView({ clients, owners, searching, onEditClient, onEditOwner, onDeleteOwner }) {
   return (
     <div className="people">
       <h3 className="psec">العملاء ({clients.length})</h3>
       {clients.length === 0 ? (
-        <p className="empty">مفيش عملاء لسه.</p>
+        <p className="empty">{searching ? "مفيش عملاء بالبحث ده." : "مفيش عملاء لسه."}</p>
       ) : (
         <ul className="tlist">
           {clients.map((c) => (
@@ -68,7 +68,7 @@ export function PeopleView({ clients, owners, onEditClient, onEditOwner, onDelet
 
       <h3 className="psec">الملاك ({owners.length})</h3>
       {owners.length === 0 ? (
-        <p className="empty">مفيش ملاك لسه. دوس "مالك جديد" وأضيف أول مالك.</p>
+        <p className="empty">{searching ? "مفيش ملاك بالبحث ده." : "مفيش ملاك لسه. دوس \"مالك جديد\" وأضيف أول مالك."}</p>
       ) : (
         <ul className="tlist">
           {owners.map((o) => (

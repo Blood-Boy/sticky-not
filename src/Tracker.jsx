@@ -15,6 +15,7 @@ export default function Tracker() {
   const [loaded, setLoaded] = React.useState(false);
   const [view, setView] = React.useState("tx"); // "tx" | "people"
   const [q, setQ] = React.useState("");
+  const [pq, setPq] = React.useState(""); // people-tab search
   const [filter, setFilter] = React.useState("all");
   // modal: { t: "client" } | { t: "owner", owner? } | { t: "tx", tx? } | { t: "view", tx }
   //      | { t: "del", tx } | { t: "ownerDel", owner } | { t: "renameClient", client }
@@ -46,6 +47,19 @@ export default function Tracker() {
     }),
     [data.txs]
   );
+
+  const people = React.useMemo(() => {
+    const needle = pq.trim().toLowerCase();
+    if (!needle) return { clients: data.clients, owners: data.owners, searching: false };
+    const has = (v) => String(v || "").toLowerCase().includes(needle);
+    return {
+      clients: data.clients.filter((c) => has(c.name)),
+      owners: data.owners.filter(
+        (o) => has(o.name) || has(o.partAddress) || has(o.nationalId)
+      ),
+      searching: true,
+    };
+  }, [data.clients, data.owners, pq]);
 
   const shown = React.useMemo(() => {
     const needle = q.trim().toLowerCase();
@@ -120,13 +134,26 @@ export default function Tracker() {
         !loaded ? (
           <p className="empty">بنحمّل البيانات...</p>
         ) : (
+          <>
+          <div className="tsearch">
+            <label className="sr" htmlFor="pq">ابحث في العملاء والملاك</label>
+            <input
+              id="pq"
+              type="search"
+              value={pq}
+              placeholder="ابحث..."
+              onChange={(e) => setPq(e.target.value)}
+            />
+          </div>
           <PeopleView
-            clients={data.clients}
-            owners={data.owners}
+            clients={people.clients}
+            owners={people.owners}
+            searching={people.searching}
             onEditClient={(c) => setModal({ t: "renameClient", client: c })}
             onEditOwner={(o) => setModal({ t: "owner", owner: o })}
             onDeleteOwner={(o) => setModal({ t: "ownerDel", owner: o })}
           />
+          </>
         )
       ) : (
         <>
