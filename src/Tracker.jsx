@@ -1,7 +1,8 @@
 import React from "react";
 import { Modal, IB, Ic } from "./ui.jsx";
 import { Confirm } from "./modals.jsx";
-import { trackerData, LIMITS, STATUS } from "./trackerData.js";
+import { trackerData, LIMITS, STATUS, ownerForPart } from "./trackerData.js";
+import { PeopleView, OwnerModal, RenameClientModal, Secret, maskId, maskPassword } from "./TrackerPeople.jsx";
 
 const SUMMARY = [
   { id: "all", label: "إجمالي المعاملات" },
@@ -10,11 +11,14 @@ const SUMMARY = [
 ];
 
 export default function Tracker() {
-  const [data, setData] = React.useState({ clients: [], txs: [] });
+  const [data, setData] = React.useState({ clients: [], txs: [], owners: [] });
   const [loaded, setLoaded] = React.useState(false);
+  const [view, setView] = React.useState("tx"); // "tx" | "people"
   const [q, setQ] = React.useState("");
   const [filter, setFilter] = React.useState("all");
-  const [modal, setModal] = React.useState(null); // { t: "client" } | { t: "tx", tx? } | { t: "del", tx }
+  // modal: { t: "client" } | { t: "owner", owner? } | { t: "tx", tx? } | { t: "view", tx }
+  //      | { t: "del", tx } | { t: "ownerDel", owner } | { t: "renameClient", client }
+  const [modal, setModal] = React.useState(null);
   const [err, setErr] = React.useState("");
 
   React.useEffect(() => {
@@ -22,7 +26,7 @@ export default function Tracker() {
     trackerData
       .list()
       .then((d) => alive && setData(d))
-      .catch(() => alive && setErr("مقدرتش أحمّل المعاملات. جرّب تاني."))
+      .catch(() => alive && setErr("مقدرتش أحمّل البيانات. جرّب تاني."))
       .finally(() => alive && setLoaded(true));
     return () => {
       alive = false;
@@ -72,95 +76,129 @@ export default function Tracker() {
 
   return (
     <section className="tracker" aria-label="متابعة الشغل">
-      <div className="tsearch">
-        <label className="sr" htmlFor="tq">ابحث في المعاملات</label>
-        <input
-          id="tq"
-          type="search"
-          value={q}
-          placeholder="ابحث..."
-          onChange={(e) => setQ(e.target.value)}
-        />
-      </div>
-
-      <div className="tstats" role="group" aria-label="ملخص المعاملات">
-        {SUMMARY.map((s) => (
-          <button
-            key={s.id}
-            type="button"
-            className="tstat"
-            aria-pressed={filter === s.id}
-            onClick={() => setFilter(s.id)}
-          >
-            <span className="tval">{counts[s.id]}</span>
-            <span className="tlbl">{s.label}</span>
-          </button>
-        ))}
-      </div>
+      <nav className="ctabs" role="tablist" aria-label="أقسام المتابعة">
+        <button
+          type="button"
+          role="tab"
+          aria-selected={view === "tx"}
+          className={"ctab" + (view === "tx" ? " active" : "")}
+          onClick={() => setView("tx")}
+        >
+          المعاملات
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={view === "people"}
+          className={"ctab" + (view === "people" ? " active" : "")}
+          onClick={() => setView("people")}
+        >
+          العملاء والملاك
+        </button>
+      </nav>
 
       <div className="tactions">
         <button type="button" className="btn" onClick={() => setModal({ t: "client" })}>
           <Ic n="userplus" s={18} />
           <span>عميل جديد</span>
         </button>
-        <button type="button" className="btn main" onClick={() => setModal({ t: "tx" })}>
-          <Ic n="plus" s={18} />
-          <span>معاملة جديدة</span>
+        <button type="button" className="btn" onClick={() => setModal({ t: "owner" })}>
+          <Ic n="userplus" s={18} />
+          <span>مالك جديد</span>
         </button>
+        {view === "tx" && (
+          <button type="button" className="btn main" onClick={() => setModal({ t: "tx" })}>
+            <Ic n="plus" s={18} />
+            <span>معاملة جديدة</span>
+          </button>
+        )}
       </div>
 
       {err && <p className="msg" role="alert">{err}</p>}
 
-      {!loaded ? (
-        <p className="empty">بنحمّل المعاملات...</p>
-      ) : shown.length === 0 ? (
-        <p className="empty">
-          {data.txs.length
-            ? "مفيش نتايج للبحث ده."
-            : "مفيش معاملات لسه. دوس \"معاملة جديدة\" وابدأ."}
-        </p>
+      {view === "people" ? (
+        !loaded ? (
+          <p className="empty">بنحمّل البيانات...</p>
+        ) : (
+          <PeopleView
+            clients={data.clients}
+            owners={data.owners}
+            onEditClient={(c) => setModal({ t: "renameClient", client: c })}
+            onEditOwner={(o) => setModal({ t: "owner", owner: o })}
+            onDeleteOwner={(o) => setModal({ t: "ownerDel", owner: o })}
+          />
+        )
       ) : (
-        <ul className="tlist">
-          {shown.map((t) => {
-            const next = t.status === "done" ? "ongoing" : "done";
-            return (
-              <li key={t.id} className={"trow " + t.status}>
-                <button
-                  type="button"
-                  className="tmain"
-                  aria-label={"تعديل المعاملة " + t.number}
-                  onClick={() => setModal({ t: "tx", tx: t })}
-                >
-                  <span className="tnum">#{t.number}</span>
-                  <span className="tclient">{clientName.get(t.clientId) || "عميل محذوف"}</span>
-                  <span className="ttype">{t.partTitle} — {t.type}</span>
-                  {t.notes && <span className="tnotes">{t.notes}</span>}
-                </button>
-                <button
-                  type="button"
-                  className={"tstatus " + t.status}
-                  aria-label={"الحالة: " + STATUS[t.status] + ". دوس لتغييرها إلى " + STATUS[next]}
-                  title={"غيّر الحالة إلى " + STATUS[next]}
-                  onClick={async () => {
-                    const e = await run(() => trackerData.setStatus(t.id, next));
-                    if (e) setErr(e);
-                  }}
-                >
-                  {STATUS[t.status]}
-                </button>
-                <button
-                  type="button"
-                  className="mini"
-                  aria-label="احذف المعاملة"
-                  title="احذف المعاملة"
-                  onClick={() => setModal({ t: "del", tx: t })}
-                >
-                  <Ic n="trash" s={18} />
-                </button>
-              </li>
-            );
-          })}
-        </ul>
+        <>
+          <div className="tsearch">
+            <label className="sr" htmlFor="tq">ابحث في المعاملات</label>
+            <input
+              id="tq"
+              type="search"
+              value={q}
+              placeholder="ابحث..."
+              onChange={(e) => setQ(e.target.value)}
+            />
+          </div>
+
+          <div className="tstats" role="group" aria-label="ملخص المعاملات">
+            {SUMMARY.map((s) => (
+              <button
+                key={s.id}
+                type="button"
+                className="tstat"
+                aria-pressed={filter === s.id}
+                onClick={() => setFilter(s.id)}
+              >
+                <span className="tval">{counts[s.id]}</span>
+                <span className="tlbl">{s.label}</span>
+              </button>
+            ))}
+          </div>
+
+          {!loaded ? (
+            <p className="empty">بنحمّل المعاملات...</p>
+          ) : shown.length === 0 ? (
+            <p className="empty">
+              {data.txs.length
+                ? "مفيش نتايج للبحث ده."
+                : "مفيش معاملات لسه. دوس \"معاملة جديدة\" وابدأ."}
+            </p>
+          ) : (
+            <ul className="tlist">
+              {shown.map((t) => {
+                const next = t.status === "done" ? "ongoing" : "done";
+                return (
+                  <li key={t.id} className={"trow " + t.status}>
+                    <button
+                      type="button"
+                      className="tmain"
+                      aria-label={"عرض المعاملة " + t.number}
+                      onClick={() => setModal({ t: "view", tx: t })}
+                    >
+                      <span className="tnum">#{t.number}</span>
+                      <span className="tclient">{clientName.get(t.clientId) || "عميل محذوف"}</span>
+                      <span className="ttype">{t.partTitle} — {t.type}</span>
+                      {t.notes && <span className="tnotes">{t.notes}</span>}
+                    </button>
+                    <button
+                      type="button"
+                      className={"tstatus " + t.status}
+                      aria-label={"الحالة: " + STATUS[t.status] + ". دوس لتغييرها إلى " + STATUS[next]}
+                      title={"غيّر الحالة إلى " + STATUS[next]}
+                      onClick={async () => {
+                        const e = await run(() => trackerData.setStatus(t.id, next));
+                        if (e) setErr(e);
+                      }}
+                    >
+                      {STATUS[t.status]}
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </>
       )}
 
       {modal?.t === "client" && (
@@ -174,9 +212,49 @@ export default function Tracker() {
         />
       )}
 
+      {modal?.t === "renameClient" && (
+        <RenameClientModal
+          client={modal.client}
+          onClose={close}
+          onSave={async (name) => {
+            const e = await run(() => trackerData.renameClient(modal.client.id, name));
+            if (!e) close();
+            return e;
+          }}
+        />
+      )}
+
+      {modal?.t === "owner" && (
+        <OwnerModal
+          owner={modal.owner}
+          onClose={close}
+          onAskDelete={() => setModal({ t: "ownerDel", owner: modal.owner })}
+          onSave={async (input) => {
+            const e = await run(() => trackerData.saveOwner(input, modal.owner && modal.owner.id));
+            if (!e) close();
+            return e;
+          }}
+        />
+      )}
+
+      {modal?.t === "ownerDel" && (
+        <Confirm
+          text={"تحذف المالك " + modal.owner.name + " نهائياً؟"}
+          yes="احذف"
+          onYes={async () => {
+            const id = modal.owner.id;
+            close();
+            const e = await run(() => trackerData.removeOwner(id));
+            if (e) setErr(e);
+          }}
+          onNo={close}
+        />
+      )}
+
       {modal?.t === "tx" && (
         <TxModal
           clients={data.clients}
+          owners={data.owners}
           tx={modal.tx}
           onClose={close}
           onAskDelete={() => setModal({ t: "del", tx: modal.tx })}
@@ -185,6 +263,17 @@ export default function Tracker() {
             if (!e) close();
             return e;
           }}
+        />
+      )}
+
+      {modal?.t === "view" && (
+        <TxDetails
+          tx={modal.tx}
+          clientName={clientName.get(modal.tx.clientId)}
+          owner={ownerForPart(data.owners, modal.tx.partTitle)}
+          onEdit={() => setModal({ t: "tx", tx: modal.tx })}
+          onDelete={() => setModal({ t: "del", tx: modal.tx })}
+          onClose={close}
         />
       )}
 
@@ -231,7 +320,6 @@ function ClientModal({ onSave, onClose }) {
             autoFocus
             value={name}
             maxLength={LIMITS.client[1]}
-            placeholder="اكتب اسم العميل"
             onChange={(e) => {
               setName(e.target.value);
               setMsg("");
@@ -252,7 +340,7 @@ function ClientModal({ onSave, onClose }) {
   );
 }
 
-function TxModal({ clients, tx, onSave, onClose, onAskDelete }) {
+function TxModal({ clients, owners, tx, onSave, onClose, onAskDelete }) {
   const editing = !!tx;
   const [clientId, setClientId] = React.useState(tx ? tx.clientId : clients[0] ? clients[0].id : "");
   const [number, setNumber] = React.useState(tx ? tx.number : "");
@@ -262,6 +350,8 @@ function TxModal({ clients, tx, onSave, onClose, onAskDelete }) {
   const [status, setStatus] = React.useState(tx ? tx.status : "ongoing");
   const [busy, setBusy] = React.useState(false);
   const [msg, setMsg] = React.useState("");
+
+  const match = partTitle.trim() ? ownerForPart(owners, partTitle) : null;
 
   const ok =
     !!clientId &&
@@ -303,39 +393,29 @@ function TxModal({ clients, tx, onSave, onClose, onAskDelete }) {
 
         <label className="tfield">
           <span>رقم المعاملة</span>
-          <input
-            value={number}
-            maxLength={LIMITS.number[1]}
-            onChange={touch(setNumber)}
-          />
+          <input value={number} maxLength={LIMITS.number[1]} onChange={touch(setNumber)} />
         </label>
 
         <label className="tfield">
           <span>عنوان القطعة</span>
-          <input
-            value={partTitle}
-            maxLength={LIMITS.partTitle[1]}
-            onChange={touch(setPartTitle)}
-          />
+          <input value={partTitle} maxLength={LIMITS.partTitle[1]} onChange={touch(setPartTitle)} />
+          {partTitle.trim() && (
+            <small className="thint">
+              {match
+                ? "المالك المسجل على العنوان ده: " + match.name
+                : "مفيش مالك مسجل على عنوان القطعة ده."}
+            </small>
+          )}
         </label>
 
         <label className="tfield">
           <span>نوع المعاملة</span>
-          <input
-            value={type}
-            maxLength={LIMITS.type[1]}
-            onChange={touch(setType)}
-          />
+          <input value={type} maxLength={LIMITS.type[1]} onChange={touch(setType)} />
         </label>
 
         <label className="tfield">
           <span>الملاحظات (اختياري)</span>
-          <textarea
-            rows="3"
-            value={notes}
-            maxLength={LIMITS.notes}
-            onChange={touch(setNotes)}
-          />
+          <textarea rows="3" value={notes} maxLength={LIMITS.notes} onChange={touch(setNotes)} />
         </label>
 
         <div className="tfield">
@@ -364,11 +444,65 @@ function TxModal({ clients, tx, onSave, onClose, onAskDelete }) {
           <button type="button" className="btn" onClick={onClose}>
             إلغاء
           </button>
-          {editing && (
-            <IB c="danger" n="trash" label="احذف المعاملة" onClick={onAskDelete} />
-          )}
+          {editing && <IB c="danger" n="trash" label="احذف المعاملة" onClick={onAskDelete} />}
         </div>
       </form>
+    </Modal>
+  );
+}
+
+function TxDetails({ tx, clientName, owner, onEdit, onDelete, onClose }) {
+  return (
+    <Modal onClose={onClose}>
+      <p className="q">معاملة #{tx.number}</p>
+      <dl className="tdet">
+        <div className="tdet-row">
+          <dt>العميل</dt>
+          <dd>{clientName || "عميل محذوف"}</dd>
+        </div>
+        <div className="tdet-row">
+          <dt>عنوان القطعة</dt>
+          <dd>{tx.partTitle}</dd>
+        </div>
+        <div className="tdet-row">
+          <dt>نوع المعاملة</dt>
+          <dd>{tx.type}</dd>
+        </div>
+        <div className="tdet-row">
+          <dt>الحالة</dt>
+          <dd>{STATUS[tx.status]}</dd>
+        </div>
+        {tx.notes && (
+          <div className="tdet-row">
+            <dt>الملاحظات</dt>
+            <dd>{tx.notes}</dd>
+          </div>
+        )}
+      </dl>
+
+      <h4 className="psec">بيانات المالك</h4>
+      {owner ? (
+        <dl className="tdet">
+          <div className="tdet-row">
+            <dt>الاسم</dt>
+            <dd>{owner.name}</dd>
+          </div>
+          <Secret label="الرقم القومي" value={owner.nationalId} mask={maskId} />
+          <Secret label="الباسور" value={owner.password} mask={maskPassword} />
+        </dl>
+      ) : (
+        <p className="msg">مفيش مالك مسجل على عنوان القطعة ده. ضيفه من تبويب "العملاء والملاك".</p>
+      )}
+
+      <div className="bar tmodal-actions">
+        <button type="button" className="btn main" onClick={onEdit}>
+          تعديل
+        </button>
+        <IB c="danger" n="trash" label="احذف المعاملة" onClick={onDelete} />
+        <button type="button" className="btn" onClick={onClose}>
+          إغلاق
+        </button>
+      </div>
     </Modal>
   );
 }
