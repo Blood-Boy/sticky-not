@@ -1,6 +1,6 @@
 import React from "react";
 import { Modal, IB, Ic } from "./ui.jsx";
-import { LIMITS } from "./trackerData.js";
+import { LIMITS, trackerData } from "./trackerData.js";
 
 // Shows only the last 4 digits of a national ID.
 export function maskId(v) {
@@ -77,7 +77,7 @@ export function PeopleView({ clients, owners, searching, onEditClient, onEditOwn
                 <span className="pname">{o.name}</span>
                 <span className="psub">{o.partAddress}</span>
                 <span className="psub" dir="ltr">
-                  الرقم القومي {maskId(o.nationalId)}
+                  الرقم القومي {maskId(o.nationalIdLast4)}
                 </span>
               </div>
               <button
@@ -156,13 +156,35 @@ export function RenameClientModal({ client, onSave, onClose }) {
 export function OwnerModal({ owner, onSave, onAskDelete, onClose }) {
   const [name, setName] = React.useState(owner ? owner.name : "");
   const [partAddress, setPartAddress] = React.useState(owner ? owner.partAddress : "");
-  const [nationalId, setNationalId] = React.useState(owner ? owner.nationalId : "");
-  const [password, setPassword] = React.useState(owner ? owner.password || "" : "");
+  const [nationalId, setNationalId] = React.useState("");
+  const [password, setPassword] = React.useState("");
+  const [ready, setReady] = React.useState(!owner);
   const [showPw, setShowPw] = React.useState(false);
   const [busy, setBusy] = React.useState(false);
   const [msg, setMsg] = React.useState("");
 
+  // The list only has masked data. Load the full record before editing.
+  React.useEffect(() => {
+    if (!owner) return undefined;
+    let alive = true;
+    trackerData
+      .getOwner(owner.id)
+      .then((full) => {
+        if (!alive) return;
+        setName(full.name);
+        setPartAddress(full.partAddress);
+        setNationalId(full.nationalId);
+        setPassword(full.password || "");
+        setReady(true);
+      })
+      .catch((e) => alive && setMsg(e.message));
+    return () => {
+      alive = false;
+    };
+  }, [owner && owner.id]);
+
   const ok =
+    ready &&
     name.trim().length >= LIMITS.owner[0] &&
     partAddress.trim().length >= LIMITS.partTitle[0] &&
     new RegExp("^\\d{" + LIMITS.nationalId + "}$").test(nationalId);

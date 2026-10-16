@@ -88,6 +88,21 @@ export const api = {
       body: JSON.stringify({ accept }),
     }),
 
+  // Work tracker
+  trackerList: () => req("/api/tracker"),
+  addClient: (name) => req("/api/clients", { method: "POST", body: JSON.stringify({ name }) }),
+  renameClient: (id, name) =>
+    req("/api/clients/" + id, { method: "PATCH", body: JSON.stringify({ name }) }),
+  getOwner: (id) => req("/api/owners/" + id),
+  addOwner: (o) => req("/api/owners", { method: "POST", body: JSON.stringify(o) }),
+  updateOwner: (id, o) =>
+    req("/api/owners/" + id, { method: "PATCH", body: JSON.stringify(o) }),
+  removeOwner: (id) => req("/api/owners/" + id, { method: "DELETE" }),
+  addTx: (t) => req("/api/transactions", { method: "POST", body: JSON.stringify(t) }),
+  updateTx: (id, patch) =>
+    req("/api/transactions/" + id, { method: "PATCH", body: JSON.stringify(patch) }),
+  removeTx: (id) => req("/api/transactions/" + id, { method: "DELETE" }),
+
   // Sync - poll for remote changes
   sync: (since) =>
     req("/api/sync" + (since ? "?since=" + encodeURIComponent(since) : "")),
