@@ -112,15 +112,18 @@ export default function Tracker() {
       </nav>
 
       <div className="tactions">
-        <button type="button" className="btn" onClick={() => setModal({ t: "client" })}>
-          <Ic n="userplus" s={18} />
-          <span>عميل جديد</span>
-        </button>
-        <button type="button" className="btn" onClick={() => setModal({ t: "owner" })}>
-          <Ic n="userplus" s={18} />
-          <span>مالك جديد</span>
-        </button>
-        {view === "tx" && (
+        {view === "people" ? (
+          <>
+            <button type="button" className="btn" onClick={() => setModal({ t: "client" })}>
+              <Ic n="userplus" s={18} />
+              <span>عميل جديد</span>
+            </button>
+            <button type="button" className="btn" onClick={() => setModal({ t: "owner" })}>
+              <Ic n="userplus" s={18} />
+              <span>مالك جديد</span>
+            </button>
+          </>
+        ) : (
           <button type="button" className="btn main" onClick={() => setModal({ t: "tx" })}>
             <Ic n="plus" s={18} />
             <span>معاملة جديدة</span>
