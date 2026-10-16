@@ -54,8 +54,8 @@ export const api = {
 
   // Folders
   getFolders: () => req("/api/folders"),
-  addFolder: (name, icon) =>
-    req("/api/folders", { method: "POST", body: JSON.stringify({ name, icon }) }),
+  addFolder: (name, icon, id) =>
+    req("/api/folders", { method: "POST", body: JSON.stringify({ name, icon, id }) }),
   updateFolder: (id, patch) =>
     req("/api/folders/" + id, { method: "PATCH", body: JSON.stringify(patch) }),
   removeFolder: (id) => req("/api/folders/" + id, { method: "DELETE" }),

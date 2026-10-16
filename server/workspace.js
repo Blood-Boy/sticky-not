@@ -241,9 +241,16 @@ function mountWorkspace(app, { supa, auth, fail }) {
       const name = String(req.body.name || "").trim().slice(0, 40);
       const icon = String(req.body.icon || "📁").slice(0, 8);
       if (!name) return res.status(400).json({ error: "badname" });
+      // Offline changes send their own id; a repeat of the same id is not a new folder.
+      const givenId = isUuid(req.body.id) ? req.body.id : null;
+      if (givenId) {
+        const { data: old } = await db
+          .from("folders").select("id, name, icon").eq("id", givenId).eq("user_id", req.user.uid).maybeSingle();
+        if (old) return res.json({ id: old.id, name: old.name, icon: old.icon || null, role: "owner" });
+      }
       const { data, error } = await db
         .from("folders")
-        .insert({ user_id: req.user.uid, name, icon })
+        .insert({ ...(givenId ? { id: givenId } : {}), user_id: req.user.uid, name, icon })
         .select("id, name, icon")
         .single();
       if (error) throw error;
@@ -332,9 +339,17 @@ function mountWorkspace(app, { supa, auth, fail }) {
       const title = String(req.body.title || "").slice(0, 400);
       const theme = Math.max(0, Math.min(50, Number(req.body.theme) || 0));
       const blocks = normBlocks(req.body.blocks);
+      const givenId = isUuid(req.body.id) ? req.body.id : null;
+      if (givenId) {
+        const { data: old } = await db
+          .from("notes")
+          .select("id, title, folder_id, theme, blocks, version, updated_at, user_id")
+          .eq("id", givenId).eq("user_id", uid).maybeSingle();
+        if (old) return res.json(toNote(old, "owner"));
+      }
       const { data, error } = await db
         .from("notes")
-        .insert({ user_id: uid, title, folder_id: folder, theme, blocks, version: 1 })
+        .insert({ ...(givenId ? { id: givenId } : {}), user_id: uid, title, folder_id: folder, theme, blocks, version: 1 })
         .select("id, title, folder_id, theme, blocks, version, updated_at, user_id")
         .single();
       if (error) throw error;
