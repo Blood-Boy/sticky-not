@@ -233,3 +233,23 @@ label.btn.ic{cursor:pointer}
   .trow{padding:8px 6px 8px 6px}
   .tstatus{padding:4px 9px;font-size:.76rem}
 }
+
+/* ── Work tracker: details, owners, clients ── */
+.tdet{margin:0 0 6px;display:flex;flex-direction:column;gap:6px;text-align:start}
+.tdet-row{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;padding:8px 10px;background:var(--hov);border-radius:10px}
+.tdet-row dt{font-size:.85rem;color:var(--mute);margin:0;white-space:nowrap}
+.tdet-row dd{margin:0;font-weight:600;overflow-wrap:anywhere;text-align:start}
+.tdet-row dd:only-of-type{grid-column:span 1}
+.tsecret{font-family:ui-monospace,Consolas,monospace;letter-spacing:.04em}
+.tshow{border:1px solid var(--line);background:var(--paper);border-radius:8px;padding:4px 10px;font-size:.82rem;color:var(--mute);min-height:30px}
+.tshow[aria-pressed="true"]{color:var(--rose);border-color:var(--rose)}
+.tpw{display:flex;gap:8px;align-items:center}
+.tpw input{flex:1;min-width:0}
+.psec{font-size:.95rem;font-weight:600;color:var(--mute);margin:14px 0 8px;text-align:start}
+.people{display:flex;flex-direction:column;gap:4px}
+.prow{display:flex;align-items:center;gap:8px;background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:10px 8px 10px 12px;list-style:none}
+.pinfo{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;text-align:start}
+.pname{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.psub{font-size:.84rem;color:var(--mute);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.thint{font-size:.82rem;color:var(--mute);margin-top:2px}
+.tfield small{display:block}
