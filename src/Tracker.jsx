@@ -481,6 +481,36 @@ function TxModal({ clients, owners, tx, onSave, onClose, onAskDelete }) {
   );
 }
 
+// Loads the full owner record when the details open, so the list never holds plain IDs.
+function OwnerSecrets({ owner }) {
+  const [full, setFull] = React.useState(null);
+  const [msg, setMsg] = React.useState("");
+
+  React.useEffect(() => {
+    let alive = true;
+    trackerData
+      .getOwner(owner.id)
+      .then((f) => alive && setFull(f))
+      .catch((e) => alive && setMsg(e.message));
+    return () => {
+      alive = false;
+    };
+  }, [owner.id]);
+
+  if (msg) return <p className="msg" role="alert">{msg}</p>;
+  if (!full) return <p className="empty">بنحمّل بيانات المالك...</p>;
+  return (
+    <dl className="tdet">
+      <div className="tdet-row">
+        <dt>الاسم</dt>
+        <dd>{full.name}</dd>
+      </div>
+      <Secret label="الرقم القومي" value={full.nationalId} mask={maskId} />
+      <Secret label="الباسور" value={full.password} mask={maskPassword} />
+    </dl>
+  );
+}
+
 function TxDetails({ tx, clientName, owner, onEdit, onDelete, onClose }) {
   return (
     <Modal onClose={onClose}>
@@ -512,14 +542,7 @@ function TxDetails({ tx, clientName, owner, onEdit, onDelete, onClose }) {
 
       <h4 className="psec">بيانات المالك</h4>
       {owner ? (
-        <dl className="tdet">
-          <div className="tdet-row">
-            <dt>الاسم</dt>
-            <dd>{owner.name}</dd>
-          </div>
-          <Secret label="الرقم القومي" value={owner.nationalId} mask={maskId} />
-          <Secret label="الباسور" value={owner.password} mask={maskPassword} />
-        </dl>
+        <OwnerSecrets owner={owner} />
       ) : (
         <p className="msg">مفيش مالك مسجل على عنوان القطعة ده. ضيفه من تبويب "العملاء والملاك".</p>
       )}
