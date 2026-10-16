@@ -92,9 +92,16 @@ function mountTracker(app, { supa, auth, fail }) {
   app.post("/api/clients", auth, async (req, res) => {
     try {
       const name = checkClientName(req.body.name);
+      // Offline changes send their own id; a repeat of the same id is not a new client.
+      const givenId = isUuid(req.body.id) ? req.body.id : null;
+      if (givenId) {
+        const { data: old } = await supa()
+          .from("clients").select(CLIENT_COLS).eq("id", givenId).eq("user_id", req.user.uid).maybeSingle();
+        if (old) return res.json(toClient(old));
+      }
       const { data, error } = await supa()
         .from("clients")
-        .insert({ user_id: req.user.uid, name })
+        .insert({ ...(givenId ? { id: givenId } : {}), user_id: req.user.uid, name })
         .select(CLIENT_COLS)
         .single();
       if (error) throw error;
@@ -213,9 +220,16 @@ function mountTracker(app, { supa, auth, fail }) {
     try {
       const f = checkTx(req.body, { requireAll: true });
       await ownsClient(supa(), req.user.uid, f.clientId);
+      const givenId = isUuid(req.body.id) ? req.body.id : null;
+      if (givenId) {
+        const { data: old } = await supa()
+          .from("transactions").select(TX_COLS).eq("id", givenId).eq("user_id", req.user.uid).maybeSingle();
+        if (old) return res.json(toTx(old));
+      }
       const { data, error } = await supa()
         .from("transactions")
         .insert({
+          ...(givenId ? { id: givenId } : {}),
           user_id: req.user.uid,
           client_id: f.clientId,
           number: f.number,

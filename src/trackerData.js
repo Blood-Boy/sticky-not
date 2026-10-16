@@ -1,4 +1,6 @@
 import { api } from "./api.js";
+import { readCache, writeCache } from "./cache.js";
+import { afterFailure, afterSuccess, enqueue, loadQueue, markHead, newId, saveQueue } from "./outbox.js";
 
 // Limits mirror server/tracker-rules.js. The server is the source of truth.
 export const LIMITS = {
@@ -59,24 +61,214 @@ export function ownerForPart(owners, partTitle) {
   return owners.find((o) => String(o.partAddress || "").trim().toLowerCase() === p) || null;
 }
 
+// Applies queued changes on top of a snapshot. Safe to run more than once.
+export function overlayTracker(state, q) {
+  let { clients, txs, owners } = state;
+  for (const op of q) {
+    const [kind, act] = op.t.split(".");
+    if (kind === "client") {
+      if (act === "add") {
+        if (!clients.some((c) => c.id === op.id)) clients = [...clients, { id: op.id, ...op.data }];
+      } else if (act === "patch") {
+        clients = clients.map((c) => (c.id === op.id ? { ...c, ...op.patch } : c));
+      }
+    } else if (kind === "tx") {
+      if (act === "add") {
+        if (!txs.some((t) => t.id === op.id)) txs = [...txs, { id: op.id, ...op.data }];
+      } else if (act === "patch") {
+        txs = txs.map((t) => (t.id === op.id ? { ...t, ...op.patch } : t));
+      } else if (act === "del") {
+        txs = txs.filter((t) => t.id !== op.id);
+      }
+    } else if (kind === "owner" && act === "del") {
+      owners = owners.filter((o) => o.id !== op.id);
+    }
+  }
+  return { clients, txs, owners };
+}
+
+// Only the fields the server accepts for a transaction.
+function pickTx(input) {
+  const out = {};
+  for (const k of ["clientId", "number", "partTitle", "type", "notes", "status"]) {
+    if (input[k] !== undefined) out[k] = input[k];
+  }
+  return out;
+}
+
 /*
- * Data layer for the work tracker. Each write returns a fresh snapshot
- * { clients, txs, owners }; owners are masked (last 4 digits of the national
- * ID, and a hasPassword flag). Use getOwner(id) to read the full owner data.
+ * Work tracker data. Clients, transactions and owner removals work offline:
+ * they are shown at once, kept on this device, and sent in order when there is
+ * a connection. Owner add/edit is online only, because it carries the national
+ * ID and password, which are never stored on the device in plain text.
+ * Owners in the snapshot are masked (last 4 digits, hasPassword flag).
  */
+const EMPTY = { clients: [], txs: [], owners: [] };
+const RETRY_MS = 15000;
+
+let who = null;          // username; storage keys are built from it
+let base = null;         // last server snapshot, with confirmed changes folded in
+let queue = [];          // queued changes (see outbox.js)
+let online = true;
+let pendingNotice = "";  // one-off message, e.g. a change the server refused
+let running = false;
+let again = false;
+let timer = null;
+let listening = false;
+const listeners = new Set();
+
+const key = () => who + "#tracker";
+const view = () => overlayTracker(base || EMPTY, queue);
+
+function snapshot(notice = "") {
+  return { data: view(), online, pending: queue.length, notice };
+}
+
+function emit() {
+  const st = snapshot(pendingNotice);
+  pendingNotice = "";
+  listeners.forEach((fn) => fn(st));
+}
+
+function setQueue(q) {
+  queue = q;
+  if (who) saveQueue(key(), q);
+}
+
+function setBase(b) {
+  base = b;
+  if (who) writeCache(key(), b);
+}
+
+async function sendOp(op) {
+  try {
+    switch (op.t) {
+      case "client.add": return await api.addClient(op.data.name, op.id);
+      case "client.patch": return await api.renameClient(op.id, op.patch.name);
+      case "tx.add": return await api.addTx({ ...op.data, id: op.id });
+      case "tx.patch": return await api.updateTx(op.id, op.patch);
+      case "tx.del": return await api.removeTx(op.id);
+      case "owner.del": return await api.removeOwner(op.id);
+      default: return null;
+    }
+  } catch (e) {
+    const c = (e && e.message) || "";
+    if (c === "notfound" && op.t.endsWith(".del")) return null;   // already gone
+    const err = new Error(c);
+    err.code = c;
+    err.kind =
+      c === "network" ? "offline"
+      : c === "unauthorized" ? "auth"
+      : c === "server" || /^http5/.test(c) ? "server"
+      : "rejected";
+    throw err;
+  }
+}
+
+async function runFlush() {
+  if (running) {
+    again = true;
+    return;
+  }
+  running = true;
+  try {
+    do {
+      again = false;
+      while (queue.length) {
+        setQueue(markHead(queue));
+        const op = queue[0];
+        try {
+          await sendOp(op);
+          // Fold the confirmed change into the snapshot, so the item never disappears.
+          setBase(overlayTracker(base || EMPTY, [op]));
+          setQueue(afterSuccess(queue));
+          online = true;
+          emit();
+        } catch (e) {
+          const r = afterFailure(queue, e);
+          setQueue(r.queue);
+          if (r.stop === "offline") online = false;
+          if (!r.stop && e.kind === "rejected") pendingNotice = MESSAGES[e.code] || MESSAGES.server;
+          emit();
+          if (r.stop) {
+            clearTimeout(timer);
+            timer = setTimeout(runFlush, RETRY_MS);
+            return;
+          }
+        }
+      }
+      // Queue is empty: take the server's copy, which has the server's own timestamps.
+      if (who && !queue.length) {
+        try {
+          setBase(await api.trackerList());
+          online = true;
+          emit();
+        } catch (e) {
+          if (e && e.message === "network") online = false;
+        }
+      }
+    } while (again);
+  } finally {
+    running = false;
+  }
+}
+
+function flushSoon() {
+  clearTimeout(timer);
+  runFlush();
+}
+
+function enqueueOp(op) {
+  setQueue(enqueue(queue, op));
+  flushSoon();
+  return view();
+}
+
 export const trackerData = {
-  list() {
-    return call(() => api.trackerList());
+  // Called when the tracker opens for a user. Loads the saved snapshot and queue.
+  use(name) {
+    who = name;
+    base = readCache(key()) || null;
+    queue = loadQueue(key());
+    online = navigator.onLine !== false;
+    if (!listening) {
+      listening = true;
+      addEventListener("online", () => {
+        online = true;
+        flushSoon();
+        emit();
+      });
+      addEventListener("offline", () => {
+        online = false;
+        emit();
+      });
+    }
+    if (queue.length) flushSoon();
+    emit();
   },
 
-  async addClient(name) {
-    await call(() => api.addClient(name));
-    return this.list();
+  subscribe(fn) {
+    listeners.add(fn);
+    return () => listeners.delete(fn);
   },
 
-  async renameClient(id, name) {
-    await call(() => api.renameClient(id, name));
-    return this.list();
+  // Fresh snapshot from the server. Without a connection, the saved one is used.
+  async list() {
+    try {
+      const snap = await api.trackerList();
+      setBase(snap);
+      online = true;
+      flushSoon();
+      emit();
+      return view();
+    } catch (e) {
+      if (e && e.message === "network" && base) {
+        online = false;
+        emit();
+        return view();
+      }
+      throw toUserError(e);
+    }
   },
 
   // Full owner data, including the national ID and password. Call only when the user opens it.
@@ -84,30 +276,30 @@ export const trackerData = {
     return call(() => api.getOwner(id));
   },
 
-  // input: { name, partAddress, nationalId, password }, id is set when editing
+  addClient: async (name) => enqueueOp({ t: "client.add", id: newId(), data: { name } }),
+
+  renameClient: async (id, name) => enqueueOp({ t: "client.patch", id, patch: { name } }),
+
+  // Online only: the national ID and password are sent to the server to be encrypted.
   async saveOwner(input, id) {
     await call(() => (id ? api.updateOwner(id, input) : api.addOwner(input)));
     return this.list();
   },
 
-  async removeOwner(id) {
-    await call(() => api.removeOwner(id));
-    return this.list();
-  },
+  removeOwner: async (id) => enqueueOp({ t: "owner.del", id }),
 
   // input: { clientId, number, partTitle, type, notes, status }, id is set when editing
-  async saveTx(input, id) {
-    await call(() => (id ? api.updateTx(id, input) : api.addTx(input)));
-    return this.list();
+  saveTx: async (input, id) => {
+    if (id) return enqueueOp({ t: "tx.patch", id, patch: pickTx(input) });
+    const now = new Date().toISOString();
+    return enqueueOp({
+      t: "tx.add",
+      id: newId(),
+      data: { ...pickTx(input), status: input.status || "ongoing", createdAt: now, updatedAt: now },
+    });
   },
 
-  async setStatus(id, status) {
-    await call(() => api.updateTx(id, { status }));
-    return this.list();
-  },
+  setStatus: async (id, status) => enqueueOp({ t: "tx.patch", id, patch: { status } }),
 
-  async removeTx(id) {
-    await call(() => api.removeTx(id));
-    return this.list();
-  },
+  removeTx: async (id) => enqueueOp({ t: "tx.del", id }),
 };

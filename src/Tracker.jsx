@@ -10,9 +10,11 @@ const SUMMARY = [
   { id: "done", label: "منتهية" },
 ];
 
-export default function Tracker() {
+export default function Tracker({ user }) {
   const [data, setData] = React.useState({ clients: [], txs: [], owners: [] });
   const [loaded, setLoaded] = React.useState(false);
+  const [online, setOnline] = React.useState(true);
+  const [pending, setPending] = React.useState(0);
   const [view, setView] = React.useState("tx"); // "tx" | "people"
   const [q, setQ] = React.useState("");
   const [pq, setPq] = React.useState(""); // people-tab search
@@ -24,15 +26,24 @@ export default function Tracker() {
 
   React.useEffect(() => {
     let alive = true;
+    trackerData.use(user);
+    const off = trackerData.subscribe((st) => {
+      if (!alive) return;
+      setData(st.data);
+      setOnline(st.online);
+      setPending(st.pending);
+      if (st.notice) setErr(st.notice);
+    });
     trackerData
       .list()
       .then((d) => alive && setData(d))
-      .catch(() => alive && setErr("مقدرتش أحمّل البيانات. جرّب تاني."))
+      .catch((e) => alive && setErr(e.message || "مقدرتش أحمّل البيانات. جرّب تاني."))
       .finally(() => alive && setLoaded(true));
     return () => {
       alive = false;
+      off();
     };
-  }, []);
+  }, [user]);
 
   const clientName = React.useMemo(
     () => new Map(data.clients.map((c) => [c.id, c.name])),
@@ -131,6 +142,13 @@ export default function Tracker() {
         )}
       </div>
 
+      {(!online || pending > 0) && (
+        <p className="msg" role="status">
+          {!online
+            ? "مفيش نت. التغييرات محفوظة على الجهاز وهتترفع أول ما النت يرجع."
+            : "بنرفع التغييرات (" + pending + ")..."}
+        </p>
+      )}
       {err && <p className="msg" role="alert">{err}</p>}
 
       {view === "people" ? (

@@ -90,7 +90,7 @@ export const api = {
 
   // Work tracker
   trackerList: () => req("/api/tracker"),
-  addClient: (name) => req("/api/clients", { method: "POST", body: JSON.stringify({ name }) }),
+  addClient: (name, id) => req("/api/clients", { method: "POST", body: JSON.stringify({ name, id }) }),
   renameClient: (id, name) =>
     req("/api/clients/" + id, { method: "PATCH", body: JSON.stringify({ name }) }),
   getOwner: (id) => req("/api/owners/" + id),

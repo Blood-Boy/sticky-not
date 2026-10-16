@@ -424,7 +424,7 @@ export default function Shell({ user, onLogout }) {
           onTab={(t) => {
             location.hash = t === "work" ? "#/w" : "";
           }}
-          tracker={<Tracker />}
+          tracker={<Tracker user={user} />}
         />
       )}
 
