@@ -5,7 +5,6 @@ import { store, uid } from "./lib.js";
 export const LIMITS = {
   client: [2, 60],
   number: [1, 40],
-  item: [1, 40],
   partTitle: [1, 80],
   type: [1, 80],
   notes: 1000,
@@ -62,16 +61,12 @@ export const trackerData = {
   // input: { clientId, number, type, notes, status }, id is set when editing
   async saveTx(input, id) {
     const number = String(input.number || "").trim();
-    const item = String(input.item || "").trim();
     const partTitle = String(input.partTitle || "").trim();
     const type = String(input.type || "").trim();
     const notes = String(input.notes || "").trim();
     if (!input.clientId) throw new Error("اختار العميل الأول.");
     if (number.length < LIMITS.number[0] || number.length > LIMITS.number[1]) {
       throw new Error("رقم المعاملة مطلوب، وبحد أقصى 40 حرف.");
-    }
-    if (item.length < LIMITS.item[0] || item.length > LIMITS.item[1]) {
-      throw new Error("البند مطلوب، وبحد أقصى 40 حرف.");
     }
     if (partTitle.length < LIMITS.partTitle[0] || partTitle.length > LIMITS.partTitle[1]) {
       throw new Error("عنوان القطعة مطلوب، وبحد أقصى 80 حرف.");
@@ -93,7 +88,6 @@ export const trackerData = {
     const row = {
       clientId: input.clientId,
       number,
-      item,
       partTitle,
       type,
       notes,

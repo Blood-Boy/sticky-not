@@ -50,7 +50,7 @@ export default function Tracker() {
       .filter(
         (t) =>
           !needle ||
-          [t.number, t.item, t.partTitle, t.type, t.notes, clientName.get(t.clientId)].some((v) =>
+          [t.number, t.partTitle, t.type, t.notes, clientName.get(t.clientId)].some((v) =>
             (v || "").toLowerCase().includes(needle)
           )
       )
@@ -78,7 +78,7 @@ export default function Tracker() {
           id="tq"
           type="search"
           value={q}
-          placeholder="ابحث برقم المعاملة أو العميل أو النوع..."
+          placeholder="ابحث..."
           onChange={(e) => setQ(e.target.value)}
         />
       </div>
@@ -131,7 +131,7 @@ export default function Tracker() {
                   aria-label={"تعديل المعاملة " + t.number}
                   onClick={() => setModal({ t: "tx", tx: t })}
                 >
-                  <span className="tnum">#{t.number} · بند {t.item}</span>
+                  <span className="tnum">#{t.number}</span>
                   <span className="tclient">{clientName.get(t.clientId) || "عميل محذوف"}</span>
                   <span className="ttype">{t.partTitle} — {t.type}</span>
                   {t.notes && <span className="tnotes">{t.notes}</span>}
@@ -256,7 +256,6 @@ function TxModal({ clients, tx, onSave, onClose, onAskDelete }) {
   const editing = !!tx;
   const [clientId, setClientId] = React.useState(tx ? tx.clientId : clients[0] ? clients[0].id : "");
   const [number, setNumber] = React.useState(tx ? tx.number : "");
-  const [item, setItem] = React.useState(tx ? tx.item || "" : "");
   const [partTitle, setPartTitle] = React.useState(tx ? tx.partTitle || "" : "");
   const [type, setType] = React.useState(tx ? tx.type : "");
   const [notes, setNotes] = React.useState(tx ? tx.notes || "" : "");
@@ -267,7 +266,6 @@ function TxModal({ clients, tx, onSave, onClose, onAskDelete }) {
   const ok =
     !!clientId &&
     number.trim().length >= LIMITS.number[0] &&
-    item.trim().length >= LIMITS.item[0] &&
     partTitle.trim().length >= LIMITS.partTitle[0] &&
     type.trim().length >= LIMITS.type[0] &&
     notes.length <= LIMITS.notes;
@@ -276,7 +274,7 @@ function TxModal({ clients, tx, onSave, onClose, onAskDelete }) {
     e.preventDefault();
     if (!ok || busy) return;
     setBusy(true);
-    setMsg((await onSave({ clientId, number, item, partTitle, type, notes, status })) || "");
+    setMsg((await onSave({ clientId, number, partTitle, type, notes, status })) || "");
     setBusy(false);
   }
 
@@ -308,18 +306,7 @@ function TxModal({ clients, tx, onSave, onClose, onAskDelete }) {
           <input
             value={number}
             maxLength={LIMITS.number[1]}
-            placeholder="مثال: 1024"
             onChange={touch(setNumber)}
-          />
-        </label>
-
-        <label className="tfield">
-          <span>البند</span>
-          <input
-            value={item}
-            maxLength={LIMITS.item[1]}
-            placeholder="مثال: B-12 أو 3"
-            onChange={touch(setItem)}
           />
         </label>
 
@@ -328,7 +315,6 @@ function TxModal({ clients, tx, onSave, onClose, onAskDelete }) {
           <input
             value={partTitle}
             maxLength={LIMITS.partTitle[1]}
-            placeholder="مثال: الغطاء الخلفي 2024"
             onChange={touch(setPartTitle)}
           />
         </label>
@@ -338,7 +324,6 @@ function TxModal({ clients, tx, onSave, onClose, onAskDelete }) {
           <input
             value={type}
             maxLength={LIMITS.type[1]}
-            placeholder="مثال: تقديم، استشارة، تسليم"
             onChange={touch(setType)}
           />
         </label>
@@ -349,7 +334,6 @@ function TxModal({ clients, tx, onSave, onClose, onAskDelete }) {
             rows="3"
             value={notes}
             maxLength={LIMITS.notes}
-            placeholder="أي تفاصيل تفيدك"
             onChange={touch(setNotes)}
           />
         </label>
