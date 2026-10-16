@@ -5,6 +5,7 @@ import Home from "./Home.jsx";
 import NoteView from "./NoteView.jsx";
 import { Confirm, MoveModal, NameModal, ProfileModal, ShareModal } from "./modals.jsx";
 import { CollabModal, InboxModal } from "./collab.jsx";
+import Tracker from "./Tracker.jsx";
 
 const POLL_MS = 6000;       // normal poll interval
 const POLL_FAST_MS = 3000;  // when a shared note is open
@@ -288,6 +289,11 @@ export default function Shell({ user, onLogout }) {
           onFolderEdit={(f) => setNm({ id: f.id, init: f.name, icon: f.icon || "📁" })}
           onCollab={openCollab}
           onLogout={onLogout}
+          tab={hash === "#/w" ? "work" : "notes"}
+          onTab={(t) => {
+            location.hash = t === "work" ? "#/w" : "";
+          }}
+          tracker={<Tracker />}
         />
       )}
 

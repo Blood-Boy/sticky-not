@@ -25,6 +25,9 @@ export default function Home({
   onCollab,
   onInbox,
   onLogout,
+  tab,
+  onTab,
+  tracker,
 }) {
   // Fallback: if myNotes not passed, use notes
   const ownNotes = myNotes || notes;
@@ -65,6 +68,33 @@ export default function Home({
         </button>
       </div>
 
+      {!folder && (
+        <nav className="ctabs" role="tablist" aria-label="الأقسام">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={tab !== "work"}
+            className={"ctab" + (tab !== "work" ? " active" : "")}
+            onClick={() => onTab && onTab("notes")}
+          >
+            النوتس
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={tab === "work"}
+            className={"ctab" + (tab === "work" ? " active" : "")}
+            onClick={() => onTab && onTab("work")}
+          >
+            متابعة الشغل
+          </button>
+        </nav>
+      )}
+
+      {!folder && tab === "work" ? (
+        tracker
+      ) : (
+        <>
       {folder ? (
         <h1>{(folder.icon || "📁") + " " + folder.name}</h1>
       ) : (
@@ -115,6 +145,8 @@ export default function Home({
               <NoteCard key={n.id} n={n} onAsk={null} onMove={null} onCollab={null} shared owner={n.owner} />
             ))}
           </div>
+        </>
+      )}
         </>
       )}
 

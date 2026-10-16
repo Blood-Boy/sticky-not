@@ -185,3 +185,51 @@ label.btn.ic{cursor:pointer}
 .editorbadge{font-size:.75rem;font-weight:700;background:color-mix(in srgb,var(--rose) 14%,transparent);color:var(--rose);border-radius:999px;padding:3px 10px;border:1.5px solid color-mix(in srgb,var(--rose) 30%,transparent)}
 .sec-head{font-size:1rem;font-weight:600;color:var(--mute);margin:26px 0 12px;padding-top:16px;border-top:1.5px solid var(--line)}
 .nowner{display:flex;align-items:center;gap:4px;font-size:.78rem;color:var(--mute);margin:0 0 6px}
+
+/* ── Work tracker UI ── */
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.tracker{display:flex;flex-direction:column;gap:14px}
+.tsearch input[type=search]{width:100%;border:1.5px solid var(--line);background:var(--paper);border-radius:12px;padding:11px 14px;font-size:1rem}
+.tstats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.tstat{display:flex;flex-direction:column;align-items:center;gap:2px;padding:12px 8px;border:1.5px solid var(--line);background:var(--paper);border-radius:12px;color:var(--mute)}
+.tstat:hover{background:var(--hov)}
+.tstat[aria-pressed="true"]{border-color:var(--rose);color:var(--rose);background:color-mix(in srgb,var(--rose) 10%,var(--paper))}
+.tval{font-size:1.5rem;font-weight:700;line-height:1.1;color:var(--ink)}
+.tstat[aria-pressed="true"] .tval{color:var(--rose)}
+.tlbl{font-size:.82rem}
+.tactions{display:flex;gap:8px;flex-wrap:wrap}
+.tactions .btn{display:inline-flex;align-items:center;gap:6px}
+.tlist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.trow{display:flex;align-items:center;gap:8px;background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:10px 10px 10px 8px}
+.trow.done .tmain{opacity:.6}
+.tmain{flex:1;min-width:0;display:grid;gap:3px;text-align:start;border:0;background:transparent;padding:4px 6px;border-radius:8px}
+.tmain:hover{background:var(--hov)}
+.tnum{font-size:.78rem;font-weight:700;color:var(--mute);direction:ltr;justify-self:start}
+.tclient{font-weight:600;font-size:.98rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ttype{font-size:.88rem;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tnotes{font-size:.82rem;color:var(--mute);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tstatus{flex:none;border-radius:999px;border:1.5px solid;padding:4px 12px;font-size:.82rem;font-weight:600;background:transparent;min-height:34px}
+.tstatus.ongoing{border-color:color-mix(in srgb,#E09800 45%,transparent);color:#A06800;background:color-mix(in srgb,#E09800 12%,transparent)}
+.tstatus.done{border-color:color-mix(in srgb,#2ea44f 45%,transparent);color:#1a7a35;background:color-mix(in srgb,#2ea44f 12%,transparent)}
+.trow .mini{opacity:.6}
+.trow .mini:hover{opacity:1;color:#C2294F}
+.tform{text-align:start}
+.tform .q{text-align:center}
+.tfield{display:flex;flex-direction:column;gap:6px;margin-bottom:12px;text-align:start}
+.tfield > span{font-size:.88rem;color:var(--mute)}
+.tfield input,.tfield select,.tfield textarea{width:100%;border:1.5px solid var(--line);background:transparent;border-radius:10px;padding:10px 12px;font-size:1rem}
+.tfield textarea{resize:vertical;min-height:72px}
+.tfield select{background:var(--paper)}
+.tseg{display:grid;grid-template-columns:1fr 1fr;border:1.5px solid var(--line);border-radius:10px;overflow:hidden}
+.tseg button{border:0;background:transparent;padding:9px 0;color:var(--mute)}
+.tseg button[aria-pressed="true"]{color:#fff;background:var(--rose)}
+.tseg button.done[aria-pressed="true"]{background:#2ea44f}
+.tmodal-actions{justify-content:center;margin:6px 0 0}
+@media (max-width:600px){
+  .tstats{gap:8px}
+  .tval{font-size:1.25rem}
+  .tlbl{font-size:.76rem}
+  .tactions .btn{flex:1;justify-content:center}
+  .trow{padding:8px 6px 8px 6px}
+  .tstatus{padding:4px 9px;font-size:.76rem}
+}
