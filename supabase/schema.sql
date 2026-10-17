@@ -117,3 +117,19 @@ create index if not exists transactions_client_idx on public.transactions (clien
 alter table public.clients enable row level security;
 alter table public.owners enable row level security;
 alter table public.transactions enable row level security;
+
+-- ── Accounts: money owed by tracker clients ───────────────────────────────
+create table if not exists public.accounts (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references public.profiles (id) on delete cascade,
+  client_id uuid not null references public.clients (id) on delete restrict,
+  amount numeric(12,2) not null check (amount > 0),
+  item text not null,
+  notes text not null default '',
+  paid boolean not null default false,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+create index if not exists accounts_user_paid_idx on public.accounts (user_id, paid);
+create index if not exists accounts_client_idx on public.accounts (client_id);
+alter table public.accounts enable row level security;

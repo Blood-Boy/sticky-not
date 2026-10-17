@@ -7,6 +7,7 @@ import { Confirm, MoveModal, NameModal, ProfileModal, ShareModal } from "./modal
 import { CollabModal, InboxModal } from "./collab.jsx";
 import Tracker from "./Tracker.jsx";
 import { readCache, writeCache } from "./cache.js";
+import Accounts from "./Accounts.jsx";
 import { afterFailure, afterSuccess, enqueue, loadQueue, markHead, newId, overlay, saveQueue } from "./outbox.js";
 
 const POLL_MS = 6000;       // normal poll interval
@@ -420,11 +421,12 @@ export default function Shell({ user, onLogout }) {
           onFolderEdit={(f) => setNm({ id: f.id, init: f.name, icon: f.icon || "📁" })}
           onCollab={openCollab}
           onLogout={onLogout}
-          tab={hash === "#/w" ? "work" : "notes"}
+          tab={hash === "#/w" ? "work" : hash === "#/a" ? "accounts" : "notes"}
           onTab={(t) => {
-            location.hash = t === "work" ? "#/w" : "";
+            location.hash = t === "work" ? "#/w" : t === "accounts" ? "#/a" : "";
           }}
           tracker={<Tracker user={user} />}
+          accounts={<Accounts user={user} />}
         />
       )}
 

@@ -10,6 +10,7 @@ const { createClient } = require("@supabase/supabase-js");
 const { hashPassword, verifyPassword, fakeVerify } = require("../server/password.js");
 const { mountWorkspace } = require("../server/workspace.js");
 const { mountTracker } = require("../server/tracker.js");
+const { mountAccounts } = require("../server/accounts.js");
 const { NAME_RE, likeExact } = require("../server/util.js");
 
 const PORT = process.env.PORT || 4000;
@@ -190,6 +191,7 @@ app.put("/api/me/avatar", auth, async (req, res) => {
 
 mountWorkspace(app, { supa, auth, fail });
 mountTracker(app, { supa, auth, fail });
+mountAccounts(app, { supa, auth, fail });
 
 /* ── Static (local production run) ── */
 
