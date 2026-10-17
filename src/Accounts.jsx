@@ -138,6 +138,19 @@ export default function Accounts({ user }) {
 
   const chosen = accounts.filter((a) => selected.has(a.id));
 
+  // Flips paid/unpaid. Shows the change at once, and puts it back if the server refuses it.
+  async function togglePaid(a) {
+    const next = !a.paid;
+    setAccounts((prev) => prev.map((x) => (x.id === a.id ? { ...x, paid: next } : x)));
+    try {
+      const saved = await api.updateAccount(a.id, { paid: next });
+      setAccounts((prev) => prev.map((x) => (x.id === a.id ? saved : x)));
+    } catch (e) {
+      setAccounts((prev) => prev.map((x) => (x.id === a.id ? { ...x, paid: a.paid } : x)));
+      setErr(msgFor(e));
+    }
+  }
+
   function toggle(id) {
     setSelected((s) => {
       const n = new Set(s);
@@ -284,7 +297,15 @@ export default function Accounts({ user }) {
                 {a.notes && <span className="tnotes">{a.notes}</span>}
               </button>
               <span className="tnum" dir="ltr">{money(a.amount)}</span>
-              <span className={"tstatus " + (a.paid ? "done" : "ongoing")}>{a.paid ? "مدفوع" : "غير مدفوع"}</span>
+              <button
+                type="button"
+                className={"tstatus " + (a.paid ? "done" : "ongoing")}
+                aria-label={"الحالة: " + (a.paid ? "مدفوع" : "غير مدفوع") + ". دوس لتغييرها إلى " + (a.paid ? "غير مدفوع" : "مدفوع")}
+                title={"غيّر الحالة إلى " + (a.paid ? "غير مدفوع" : "مدفوع")}
+                onClick={() => togglePaid(a)}
+              >
+                {a.paid ? "مدفوع" : "غير مدفوع"}
+              </button>
             </li>
           ))}
         </ul>
