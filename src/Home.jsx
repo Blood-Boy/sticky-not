@@ -28,6 +28,7 @@ export default function Home({
   tab,
   onTab,
   tracker,
+  accounts,
 }) {
   // Fallback: if myNotes not passed, use notes
   const ownNotes = myNotes || notes;
@@ -73,8 +74,8 @@ export default function Home({
           <button
             type="button"
             role="tab"
-            aria-selected={tab !== "work"}
-            className={"ctab" + (tab !== "work" ? " active" : "")}
+            aria-selected={tab === "notes"}
+            className={"ctab" + (tab === "notes" ? " active" : "")}
             onClick={() => onTab && onTab("notes")}
           >
             النوتس
@@ -88,10 +89,21 @@ export default function Home({
           >
             متابعة الشغل
           </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={tab === "accounts"}
+            className={"ctab" + (tab === "accounts" ? " active" : "")}
+            onClick={() => onTab && onTab("accounts")}
+          >
+            الحسابات
+          </button>
         </nav>
       )}
 
-      {!folder && tab === "work" ? (
+      {!folder && tab === "accounts" ? (
+        accounts
+      ) : !folder && tab === "work" ? (
         tracker
       ) : (
         <>

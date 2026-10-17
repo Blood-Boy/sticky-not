@@ -103,6 +103,13 @@ export const api = {
     req("/api/transactions/" + id, { method: "PATCH", body: JSON.stringify(patch) }),
   removeTx: (id) => req("/api/transactions/" + id, { method: "DELETE" }),
 
+  // Accounts (money owed by clients)
+  accountsList: () => req("/api/accounts"),
+  addAccount: (a) => req("/api/accounts", { method: "POST", body: JSON.stringify(a) }),
+  updateAccount: (id, patch) =>
+    req("/api/accounts/" + id, { method: "PATCH", body: JSON.stringify(patch) }),
+  removeAccount: (id) => req("/api/accounts/" + id, { method: "DELETE" }),
+
   // Sync - poll for remote changes
   sync: (since) =>
     req("/api/sync" + (since ? "?since=" + encodeURIComponent(since) : "")),
