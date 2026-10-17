@@ -1,6 +1,6 @@
 import React from "react";
 import { api } from "./api.js";
-import { THEMES, norm, makeImage } from "./lib.js";
+import { THEMES, norm, makeImage, uid } from "./lib.js";
 import Home from "./Home.jsx";
 import NoteView from "./NoteView.jsx";
 import { Confirm, MoveModal, NameModal, ProfileModal, ShareModal } from "./modals.jsx";
@@ -272,6 +272,7 @@ export default function Shell({ user, onLogout }) {
   const [ask, setAsk] = React.useState(null);
   const [img, setImg] = React.useState(null);
   const [mv, setMv] = React.useState(null);
+  const [cp, setCp] = React.useState(null);  // note id being copied
   const [nm, setNm] = React.useState(null);
   const [prof, setProf] = React.useState(false);
   const [collab, setCollab] = React.useState(null);  // { kind, id, name }
@@ -332,6 +333,30 @@ export default function Shell({ user, onLogout }) {
       setNotes((ns) => ns.map((n) => (n.folder === a.id ? { ...n, folder: null } : n)));
       if (folder && folder.id === a.id) location.hash = "";
     }
+  };
+
+  // Makes an independent copy of a note in the chosen folder (or the root).
+  // The copy goes through the offline queue like any new note.
+  const copyTo = (dest) => {
+    const id = cp;
+    setCp(null);
+    const src = notesRef.current.find((x) => x.id === id);
+    if (!src) return;
+    const nid = newId();
+    const sameFolder = (dest || null) === (src.folder || null);
+    const copy = norm({
+      id: nid,
+      title: sameFolder && src.title ? src.title + " (نسخة)" : src.title,
+      folder: dest || null,
+      theme: src.theme,
+      version: 1,
+      role: "owner",
+      blocks: src.blocks.map((b) => ({ ...b, id: uid() })),
+    });
+    setNotes((ns) => [copy, ...ns]);
+    commit({ t: "note.add", id: nid, data: copy });
+    const target = dest ? (folders.find((f) => f.id === dest) || {}).name || "المجلد" : "الرئيسية";
+    say("اتعملت نسخة في " + target);
   };
 
   const moveTo = (dest) => {
@@ -396,6 +421,7 @@ export default function Shell({ user, onLogout }) {
           upd={upd}
           onAsk={(id) => setAsk({ t: "note", id })}
           onMove={setMv}
+          onCopy={setCp}
           onShare={shareImg}
           onCollab={() => openCollab("note", note.id, note.title || "نوت بدون اسم")}
         />
@@ -417,6 +443,7 @@ export default function Shell({ user, onLogout }) {
           onNewFolder={() => setNm({ init: "", icon: "📁" })}
           onAsk={(id) => setAsk({ t: "note", id })}
           onMove={setMv}
+          onCopy={setCp}
           onFolderAsk={(id) => setAsk({ t: "folder", id })}
           onFolderEdit={(f) => setNm({ id: f.id, init: f.name, icon: f.icon || "📁" })}
           onCollab={openCollab}
@@ -436,6 +463,15 @@ export default function Shell({ user, onLogout }) {
           yes={ask.t === "note" ? "احذف" : "احذف المجلد"}
           onYes={del}
           onNo={() => setAsk(null)}
+        />
+      )}
+      {cp && (
+        <MoveModal
+          copy
+          folders={folders.filter((f) => !f.role || f.role === "owner")}
+          current={null}
+          onPick={copyTo}
+          onClose={() => setCp(null)}
         />
       )}
       {mv && (

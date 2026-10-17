@@ -20,6 +20,7 @@ export default function Home({
   onNewFolder,
   onAsk,
   onMove,
+  onCopy,
   onFolderAsk,
   onFolderEdit,
   onCollab,
@@ -141,7 +142,7 @@ export default function Home({
 
         {/* Own notes */}
         {ownNotes.map((n) => (
-          <NoteCard key={n.id} n={n} onAsk={onAsk} onMove={onMove} onCollab={onCollab} />
+          <NoteCard key={n.id} n={n} onAsk={onAsk} onMove={onMove} onCopy={onCopy} onCollab={onCollab} />
         ))}
       </main>
 
@@ -167,7 +168,7 @@ export default function Home({
   );
 }
 
-function NoteCard({ n, onAsk, onMove, onCollab, shared, owner }) {
+function NoteCard({ n, onAsk, onMove, onCopy, onCollab, shared, owner }) {
   return (
     <div className="nw">
       <a className="note" href={"#/n/" + n.id}>
@@ -193,6 +194,11 @@ function NoteCard({ n, onAsk, onMove, onCollab, shared, owner }) {
       {onMove && (
         <button className="cmove" aria-label="انقل النوت" title="انقل النوت" onClick={() => onMove(n.id)}>
           <Ic n="move" s={16} />
+        </button>
+      )}
+      {onCopy && (
+        <button className="ccopy" aria-label="انسخ النوت" title="انسخ النوت" onClick={() => onCopy(n.id)}>
+          <Ic n="copy" s={16} />
         </button>
       )}
       {onCollab && !shared && (

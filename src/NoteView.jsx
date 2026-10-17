@@ -2,7 +2,7 @@ import React from "react";
 import { THEMES, grad, uid, SIG } from "./lib.js";
 import { IB, Ic, TA } from "./ui.jsx";
 
-export default function NoteView({ note, upd, onAsk, onShare, onMove, onCollab }) {
+export default function NoteView({ note, upd, onAsk, onShare, onMove, onCopy, onCollab }) {
   const focus = React.useRef(null);
   const fref = (id) => (e) => {
     if (e && focus.current === id) {
@@ -124,7 +124,10 @@ export default function NoteView({ note, upd, onAsk, onShare, onMove, onCollab }
           <IB n="userplus" label="شارك مع حد" onClick={onCollab} />
         )}
         {!isEditor && (
-          <IB n="move" label="انقل لمكان تاني" onClick={() => onMove(note.id)} />
+          <>
+            <IB n="move" label="انقل لمكان تاني" onClick={() => onMove(note.id)} />
+            <IB n="copy" label="انسخ لمكان تاني" onClick={() => onCopy(note.id)} />
+          </>
         )}
         <span className="sp"></span>
         {!isEditor && (

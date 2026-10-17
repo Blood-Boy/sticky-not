@@ -65,22 +65,22 @@ export function NameModal({ title, init, icon, onSave, onClose }) {
   );
 }
 
-export function MoveModal({ folders, current, onPick, onClose }) {
+export function MoveModal({ folders, current, onPick, onClose, copy }) {
   const opts = [{ id: null, name: "الرئيسية" }, ...folders];
   return (
     <Modal onClose={onClose}>
-      <p className="q">انقل النوت إلى</p>
+      <p className="q">{copy ? "انسخ النوت إلى" : "انقل النوت إلى"}</p>
       <div className="dest">
         {opts.map((o) => (
           <button
             key={o.id || "root"}
             className="btn"
-            disabled={o.id === current}
+            disabled={!copy && o.id === current}
             onClick={() => onPick(o.id)}
           >
             {(o.id ? (o.icon || "📁") + " " : "") +
               o.name +
-              (o.id === current ? " (هنا)" : "")}
+              (!copy && o.id === current ? " (هنا)" : "")}
           </button>
         ))}
       </div>

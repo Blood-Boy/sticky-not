@@ -60,6 +60,8 @@ input.bt{border-bottom:1px dashed rgba(55,53,47,.2)}
 .chips button{border:1.5px solid var(--line);background:transparent;border-radius:999px;padding:4px 12px;font-size:.85rem}
 .cmove{position:absolute;top:8px;left:44px;width:30px;height:30px;border-radius:50%;border:0;background:rgba(255,255,255,.8);color:#37352F;font-size:1rem;line-height:1;z-index:2}
 .cmove:hover{background:#fff}
+.ccopy{position:absolute;top:8px;left:80px;width:30px;height:30px;border-radius:50%;border:0;background:rgba(255,255,255,.88);color:#37352F;display:grid;place-items:center;z-index:2;box-shadow:0 1px 2px rgba(15,15,15,.18)}
+.ccopy:hover{background:#fff}
 .note.fold{background:linear-gradient(160deg,#fff,#FFE3EC);border:2px solid #F3B7CB}
 .addf{font-size:1.15rem}
 .nm{width:100%;border:1.5px solid var(--line);background:transparent;border-radius:12px;padding:11px 14px;margin-bottom:14px;text-align:center}
@@ -129,6 +131,7 @@ button,.btn,label{touch-action:manipulation}
   .fic{font-size:1.8rem}
   .cdel,.cmove{width:34px;height:34px;top:7px}
   .cdel{left:7px}.cmove{left:47px}
+  .ccopy{width:34px;height:34px;top:7px;left:87px}
   .un{max-width:88px}
   .ubox{max-width:none;padding:5px 10px 5px 8px}
   .sq{width:40px;height:40px}
